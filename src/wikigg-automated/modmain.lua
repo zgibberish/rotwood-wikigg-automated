@@ -1,0 +1,2 @@
+GLOBAL.wikiggutil = require "wikiggutil" 
+
