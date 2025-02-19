@@ -28,27 +28,28 @@ wikiggutil.Const.MAP_LINKS = {
     ["Fortifying Ingots"] = true,
 }
 
-function wikiggutil.Util.make_link(str, dest)
-    if dest then
-        return "[["..dest.."|"..str.."]]"
-    end
-    return "[["..str.."]]"
-end
 -- turns every occurrence of "abc" in provided string into a link ( [[]] )
 -- that shows "abc" and links to remap_table["abc"] (override) or just "abc".
 function wikiggutil.Util.str_remap_tolinks(str, remap_table)
-    local make_link = wikiggutil.Util.make_link
+    local Link = wikiggutil.Misc.Link
 
     local ret = ""..str
 
     for match, dest in pairs(remap_table) do
         local replace = (type(dest) == "string")
-            and make_link(match, dest)
-            or make_link(match)
+            and Link(match, dest)
+            or Link(match)
         ret = string.gsub(ret, match, replace)
     end
 
     return ret
+end
+
+function wikiggutil.Misc.Link(str, dest)
+    if dest then
+        return "[["..dest.."|"..str.."]]"
+    end
+    return "[["..str.."]]"
 end
 
 function wikiggutil.Misc.File(filename, size)
@@ -228,9 +229,9 @@ function wikiggutil.Gems.GemsTable()
     local ICON_SIZE <const> = 128
     local Power = require "defs.powers" -- read gem effect stats from gem power
     local itemutil = require"util.itemutil"
-    local make_link = wikiggutil.Util.make_link
-    local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
+    local Link = wikiggutil.Misc.Link
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
+    local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
 
     local gems = wikiggutil.Gems.GetGemDefs()
 
@@ -249,7 +250,7 @@ function wikiggutil.Gems.GemsTable()
 
         local name = def.pretty and def.pretty.name or ""
         local code_name = def.name or ""
-        local name_formatted = make_link(name).."<br><code>"..code_name.."</code>"
+        local name_formatted = Link(name).."<br><code>"..code_name.."</code>"
         out = out.."| "..name_formatted.."\n"
 
         local desc = def.pretty and def.pretty.slotted_desc or ""
@@ -340,11 +341,11 @@ end
 function wikiggutil.Gems.GemsNavbox()
     local EquipmentGem = require "defs.equipmentgems.equipmentgem"
     local lume = require "util.lume"
-    local make_link = wikiggutil.Util.make_link
+    local Link = wikiggutil.Misc.Link
 
     local out = ""
     out = out.."{{Navbox\n" -- navbox start
-    out = out.."| title = "..make_link("Gems").."\n"
+    out = out.."| title = "..Link("Gems").."\n"
     out = out.."| state = uncollapsed\n\n"
 
     local gems = wikiggutil.Gems.GetGemDefs()
@@ -372,7 +373,7 @@ function wikiggutil.Gems.GemsNavbox()
 
         for i,def in ipairs(group) do
             local name = def.pretty and def.pretty.name or ""
-            out = out..make_link(name)
+            out = out..Link(name)
             
             local is_last_item = (i == #group)
             if not is_last_item then
