@@ -1,7 +1,7 @@
 name = "Wiki.gg Automated"
 description = "Scripts to help generating wiki.gg by reading content straight from the game."
 author = "gibberish"
-version = "1.0"
+version = "dev"
 api_version = 10
 
 dst_compatible = false
