@@ -27,13 +27,13 @@ You will run these commands in the in-game console, the result will be copied to
 Example: table of all obtainable Powers.
 
 ```lua
-imgui:SetClipboardText(wikiggutil.Powers.PowersTable())
+imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
 ```
 
 Example: table of all obtainable Gems.
 
 ```lua
-imgui:SetClipboardText(wikiggutil.Gems.GemsTable())
+imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
 ```
 
 See `wikiggutil.lua` for more details.

@@ -1,16 +1,15 @@
 --[[
     using ingame console:
-    imgui:SetClipboardText(wikiggutil.Powers.PowersTable())
-    imgui:SetClipboardText(wikiggutil.Gems.GemsTable())
-    imgui:SetClipboardText(wikiggutil.Gems.GemsNavbox())
+    imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.GemsTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.GemsNavbox())
 ]]
 
 local wikiggutil = {}
 wikiggutil.Const = {}
 wikiggutil.Util = {}
-wikiggutil.Misc = {}
-wikiggutil.Powers = {}
-wikiggutil.Gems = {}
+wikiggutil.Data = {}
+wikiggutil.Wikitext = {}
 
 -- map specific words to specific pages
 -- you can map different strings to the same page link
@@ -31,7 +30,7 @@ wikiggutil.Const.MAP_LINKS = {
 -- turns every occurrence of "abc" in provided string into a link ( [[]] )
 -- that shows "abc" and links to remap_table["abc"] (override) or just "abc".
 function wikiggutil.Util.str_remap_tolinks(str, remap_table)
-    local Link = wikiggutil.Misc.Link
+    local Link = wikiggutil.Wikitext.Link
 
     local ret = ""..str
 
@@ -45,19 +44,19 @@ function wikiggutil.Util.str_remap_tolinks(str, remap_table)
     return ret
 end
 
-function wikiggutil.Misc.Link(str, dest)
+function wikiggutil.Wikitext.Link(str, dest)
     if dest then
         return "[["..dest.."|"..str.."]]"
     end
     return "[["..str.."]]"
 end
 
-function wikiggutil.Misc.File(filename, size)
+function wikiggutil.Wikitext.File(filename, size)
     local size_opt = size and "|"..tostring(size).."px" or ""
     return "[[File:"..filename..size_opt.."]]"
 end
 
-function wikiggutil.Powers.GetPowerDefs()
+function wikiggutil.Data.GetPowerDefs()
     local Power = require "defs.powers"
     local lume = require "util.lume"
     local PowerDropManager = require "components.powerdropmanager"
@@ -81,7 +80,7 @@ function wikiggutil.Powers.GetPowerDefs()
     return sorted_powers
 end
 
-function wikiggutil.Powers.PowersTable()
+function wikiggutil.Wikitext.PowersTable()
     -- (gibberish)
     --NOTES
     --[[
@@ -106,7 +105,7 @@ function wikiggutil.Powers.PowersTable()
     local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
 
-    local powers = wikiggutil.Powers.GetPowerDefs()
+    local powers = wikiggutil.Data.GetPowerDefs()
    
     local out = ""
     -- table start
@@ -138,7 +137,7 @@ function wikiggutil.Powers.PowersTable()
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
         if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
-        out = out.."| "..wikiggutil.Misc.File(filename, ICON_SIZE).."\n"
+        out = out.."| "..wikiggutil.Wikitext.File(filename, ICON_SIZE).."\n"
 
         local name = def:GetPrettyName()
         local code_name = def.name or ""
@@ -185,7 +184,7 @@ function wikiggutil.Powers.PowersTable()
     return out
 end
 
-function wikiggutil.Gems.GetGemDefs()
+function wikiggutil.Data.GetGemDefs()
     local EquipmentGem = require "defs.equipmentgems.equipmentgem"
     local lume = require "util.lume"
 
@@ -207,7 +206,7 @@ function wikiggutil.Gems.GetGemDefs()
     return sorted_gems
 end
 
-function wikiggutil.Gems.GemsTable()
+function wikiggutil.Wikitext.GemsTable()
     -- (gibberish)
     --NOTES
     --[[
@@ -229,11 +228,11 @@ function wikiggutil.Gems.GemsTable()
     local ICON_SIZE <const> = 128
     local Power = require "defs.powers" -- read gem effect stats from gem power
     local itemutil = require"util.itemutil"
-    local Link = wikiggutil.Misc.Link
+    local Link = wikiggutil.Wikitext.Link
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
 
-    local gems = wikiggutil.Gems.GetGemDefs()
+    local gems = wikiggutil.Data.GetGemDefs()
 
     local out = ""
     out = out.."{| class=\"wikitable\"\n" -- table start
@@ -246,7 +245,7 @@ function wikiggutil.Gems.GemsTable()
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
-        out = out.."| "..wikiggutil.Misc.File(filename, ICON_SIZE).."\n"
+        out = out.."| "..wikiggutil.Wikitext.File(filename, ICON_SIZE).."\n"
 
         local name = def.pretty and def.pretty.name or ""
         local code_name = def.name or ""
@@ -338,17 +337,17 @@ function wikiggutil.Gems.GemsTable()
     return out
 end
 
-function wikiggutil.Gems.GemsNavbox()
+function wikiggutil.Wikitext.GemsNavbox()
     local EquipmentGem = require "defs.equipmentgems.equipmentgem"
     local lume = require "util.lume"
-    local Link = wikiggutil.Misc.Link
+    local Link = wikiggutil.Wikitext.Link
 
     local out = ""
     out = out.."{{Navbox\n" -- navbox start
     out = out.."| title = "..Link("Gems").."\n"
     out = out.."| state = uncollapsed\n\n"
 
-    local gems = wikiggutil.Gems.GetGemDefs()
+    local gems = wikiggutil.Data.GetGemDefs()
 
     local sorted_types = {}
     for k,_ in pairs(EquipmentGem.Type) do table.insert(sorted_types, k) end
