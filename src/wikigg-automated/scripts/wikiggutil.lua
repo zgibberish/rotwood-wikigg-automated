@@ -423,6 +423,24 @@ function wikiggutil.Data:GetConstructables(filtertags)
 end
 
 function wikiggutil.Wikitext.ConstructableTable()
+    -- (gibberish)
+    --NOTES
+    --[[
+        extract and upload gem icons
+        + get rotwood textool (https://github.com/zgibberish/rwtextool)
+        $ git clone https://github.com/zgibberish/rwtextool
+        $ python -m venv rwtextool/venv
+        $ source rwtextool/venv/bin/activate
+        $ pip install PyTexturePacker pillow
+        + get data.zip from game files
+        $ unzip data.zip "images/inv_town_decoration*" 
+        $ find images/inv_town_decoration*.tex | xargs -I {} python rwtextool/src/tex2img.py -A {}
+        $ find images/*.* | xargs rm # remove tex and atlas files
+        $ find images/*/town_prop_* | xargs -I {} mv {} images/ # move all pngs out
+        $ find images/*/ -type d | xargs rm -r # remove remaining folders
+        + upload the whole images/ folder to wiki.gg
+    ]]
+
     local ICON_SIZE <const> = 128
 
     local lume = require "util.lume"
