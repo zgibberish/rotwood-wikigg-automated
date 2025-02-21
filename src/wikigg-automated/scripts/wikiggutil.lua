@@ -3,6 +3,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsNavbox())
+    imgui:SetClipboardText(wikiggutil.Wikitext.ConstructableTable())
 ]]
 
 local wikiggutil = {}
@@ -385,6 +386,153 @@ function wikiggutil.Wikitext.GemsNavbox()
 
     out = out.."}}\n" -- navbox end
     out = out.."<noinclude>[[Category:Navigation templates|{{PAGENAME}}]]</noinclude>\n"
+
+    return out
+end
+
+-- town decors
+function wikiggutil.Data:GetConstructables(filtertags)
+    local Constructable = require "defs.constructable"
+
+    local all_items = {}
+    local ordered_slots = shallowcopy(Constructable.GetOrderedSlots())
+    for _, slot in ipairs(ordered_slots) do 
+		local slot_items = Constructable.Items[slot]
+        for key,item in pairs(slot_items) do
+            all_items[key] = item
+        end
+	end
+
+    local function item_has_tags_any(item, filtertags)
+        for _,tag in ipairs(filtertags) do
+            if item.tags[tag] then return true end
+        end
+        return false
+    end
+
+    local picked_items = {}
+    for _,item in pairs(all_items) do
+        if item_has_tags_any(item, filtertags) then
+            -- number indexed table so it can be easily sorted after
+            -- (the key is the same as item.name anyway)
+            table.insert(picked_items, item)
+        end
+    end
+
+    return picked_items
+end
+
+function wikiggutil.Wikitext.ConstructableTable()
+    local ICON_SIZE <const> = 128
+
+    local lume = require "util.lume"
+    local Constructable = require "defs.constructable"
+    local Consumable = require"defs.consumable"
+    local Link = wikiggutil.Wikitext.Link
+
+    -- this is so janky but i managed to make it work, i am so proud of myself now
+    -- (see screens/town/craftscreenmulti.lua -> function CraftSinglePanel:_AddTabs())
+    local UpvalueHacker = require("tools.upvaluehacker")
+    local CraftScreenMulti = require "screens.town.craftscreenmulti"
+    local CraftSinglePanel = UpvalueHacker.GetUpvalue(CraftScreenMulti._ctor, "CraftSinglePanel")
+    local dummy_CSP = {
+        tab_buttons = {},
+        tabs = {
+            SetTabSpacing = function(self) return self end,
+            Layout = function(self) return self end,
+            AddTextTab = function() return { -- dummy tabwidget
+                SetStarIcon = function(self) return self end,
+                AddClaimableIcon = function(self) return self end,
+                category = nil,
+                tags = nil,
+                tab_idx = nil,
+            } end,
+        },
+        GetOrderedTabs = function(self)
+            local ordered_tabwidgets = {}
+            for category,tabwidget in pairs(self.tab_buttons) do
+                table.insert(ordered_tabwidgets, tabwidget)
+            end
+            ordered_tabwidgets = lume.sort(ordered_tabwidgets, function(a,b)
+                return a.tab_idx < b.tab_idx
+            end)
+
+            local res = {}
+            for _,tabwidget in ipairs(ordered_tabwidgets) do
+                table.insert(res, {
+                    category = tabwidget.category,
+                    tags = tabwidget.tags
+                })
+            end
+
+            return res
+        end,
+    }
+    CraftSinglePanel._AddTabs(dummy_CSP)
+    local tabs = dummy_CSP:GetOrderedTabs()
+
+    local tab_keys_ordered = {}
+    local all_tab_items = {}
+    for _,tab in ipairs(tabs) do
+        table.insert(tab_keys_ordered, tab.category)
+
+        local defs = wikiggutil.Data:GetConstructables(tab.tags)
+        defs = lume.sort(defs, function(a,b) return a.pretty.name < b.pretty.name end)
+
+        all_tab_items[tab.category] = defs
+    end
+
+    local out = ""
+    out = out.."{| class=\"wikitable\"\n" -- table start
+    out = out.."|-\n"
+    out = out.."! Icon !! Name !! Ingredients !! Grid Size !! First Craft Bounty\n\n"
+
+    for _,tab_key in ipairs(tab_keys_ordered) do
+        local tab_items = all_tab_items[tab_key]
+
+        -- tab key row
+        out = out.."|-\n" 
+        out = out.."! colspan=5 | "..tab_key.."\n"
+
+        for _,def in ipairs(tab_items) do
+            out = out.."|-\n" -- row
+
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+            out = out.."| "..wikiggutil.Wikitext.File(filename, ICON_SIZE).."\n"
+
+            local name = def.pretty and def.pretty.name or ""
+            out = out.."| "..name.."\n"
+
+            local ingredient_strings = {}
+            if def.ingredients ~= nil then
+                for ingredient,amount in pairs(def.ingredients) do
+                    local pretty = STRINGS.ITEMS.MATERIALS[ingredient]
+                    local name = pretty and pretty.name
+                    local str = Link(name).." x"..tostring(amount)
+                    table.insert(ingredient_strings, str)
+                end
+            end
+            local formatted_ingredients = table.concat(ingredient_strings, ", ")
+            out = out.."| "..formatted_ingredients.."\n"
+
+            local gridsize_w = def.gridsize and def.gridsize.w or 1
+	        local gridsize_h = def.gridsize and def.gridsize.h or 1
+            local gridsize_text = tostring(gridsize_w).."x"..tostring(gridsize_h)
+            out = out.."| "..gridsize_text.."\n"
+
+            local reward_id, reward_count = Constructable.GetFirstCraftBounty(def)
+	        local reward_def = Consumable.FindItem(reward_id)
+            local reward_name = reward_def.pretty and reward_def.pretty.name or reward_id
+            local craft_bounty_str = Link(reward_name).." x"..tostring(reward_count)
+            out = out.."| "..craft_bounty_str.."\n"
+        end
+
+        out = out.."\n"
+    end
+
+    out = out.."|}" -- table end
 
     return out
 end
