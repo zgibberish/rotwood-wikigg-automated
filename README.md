@@ -16,6 +16,7 @@ If you've patched your [modloader](https://github.com/zgibberish/rotwood-modload
 
 - Make sure you're using extracted scripts (see [here](https://github.com/zgibberish/rotwood-mods/blob/main/docs/extracting_game_scripts.md)).
 - Copy `src/wikigg-automated/scripts/wikiggutil.lua` to `data/scripts/`.
+- Copy `src/wikigg-automated/scripts/tools/upvaluehacker.lua` to `data/scripts/tools` (create the `tools/` directory yourself).
 - Launch Rotwood with the `-enable_debug_console` command line flag (Right click on Rotwood in your **Steam** library and go to **Properties**).
 - Hit \` to open the in-game console.
 - Run `wikiggutil = require "wikiggutil"` to load the script.
