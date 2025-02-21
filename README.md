@@ -1,6 +1,6 @@
 # Rotwood wiki.gg Automated
 
-Scripts and tools to help generate wiki content for Rotwood. The goal is to make our pipeline more reproducible, which means more people can work on it and catching up faster with new content updates, saving unnecessary time and effort on repetitive tasks.
+Scripts and tools to help generate content for the unofficial Rotwood wiki hosted on wiki.gg.
 
 ## In-game tools
 
