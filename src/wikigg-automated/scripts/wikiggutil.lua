@@ -27,6 +27,9 @@ wikiggutil.Const.MAP_LINKS = {
     ["Traps"] = true,
     ["Fortifying Ingots"] = true,
 }
+wikiggutil.Const.ICON_SIZE = 128 -- used for stuff like power/gems icons in tables
+wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES = 64
+wikiggutil.Const.ICON_SIZE_SMALL = 24 -- used for stuff like ingredient icons (inline)
 
 -- turns every occurrence of "abc" in provided string into a link ( [[]] )
 -- that shows "abc" and links to remap_table["abc"] (override) or just "abc".
@@ -55,6 +58,12 @@ end
 function wikiggutil.Wikitext.File(filename, size)
     local size_opt = size and "|"..tostring(size).."px" or ""
     return "[[File:"..filename..size_opt.."]]"
+end
+
+function wikiggutil.Wikitext.LinkWithImage(str, dest, filename, size)
+    local link_str = wikiggutil.Wikitext.Link(str, dest)
+    local size_opt = size and "|"..tostring(size).."px" or ""
+    return "[[File:"..filename..size_opt.."|link="..link_str.."]]"
 end
 
 function wikiggutil.Data.GetPowerDefs()
@@ -100,7 +109,7 @@ function wikiggutil.Wikitext.PowersTable()
         + upload the whole images/ folder to wiki.gg
     ]]
 
-    local ICON_SIZE <const> = 128
+    
     local Power = require "defs.powers"
     local itemforge = require "defs.itemforge"
     local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
@@ -138,7 +147,7 @@ function wikiggutil.Wikitext.PowersTable()
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
         if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
-        out = out.."| "..wikiggutil.Wikitext.File(filename, ICON_SIZE).."\n"
+        out = out.."| "..wikiggutil.Wikitext.File(filename, wikiggutil.Const.ICON_SIZE).."\n"
 
         local name = def:GetPrettyName()
         local code_name = def.name or ""
@@ -226,7 +235,6 @@ function wikiggutil.Wikitext.GemsTable()
         + upload the whole images/ folder to wiki.gg
     ]]
 
-    local ICON_SIZE <const> = 128
     local Power = require "defs.powers" -- read gem effect stats from gem power
     local itemutil = require"util.itemutil"
     local Link = wikiggutil.Wikitext.Link
@@ -246,7 +254,7 @@ function wikiggutil.Wikitext.GemsTable()
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
-        out = out.."| "..wikiggutil.Wikitext.File(filename, ICON_SIZE).."\n"
+        out = out.."| "..wikiggutil.Wikitext.File(filename, wikiggutil.Const.ICON_SIZE).."\n"
 
         local name = def.pretty and def.pretty.name or ""
         local code_name = def.name or ""
@@ -426,7 +434,7 @@ function wikiggutil.Wikitext.ConstructableTable()
     -- (gibberish)
     --NOTES
     --[[
-        extract and upload gem icons
+        extract and upload prop icons
         + get rotwood textool (https://github.com/zgibberish/rwtextool)
         $ git clone https://github.com/zgibberish/rwtextool
         $ python -m venv rwtextool/venv
@@ -439,14 +447,15 @@ function wikiggutil.Wikitext.ConstructableTable()
         $ find images/*/town_prop_* | xargs -I {} mv {} images/ # move all pngs out
         $ find images/*/ -type d | xargs rm -r # remove remaining folders
         + upload the whole images/ folder to wiki.gg
-    ]]
 
-    local ICON_SIZE <const> = 128
+        + For ingredient icons just upload all icons_inventory tex :/
+    ]]
 
     local lume = require "util.lume"
     local Constructable = require "defs.constructable"
     local Consumable = require"defs.consumable"
     local Link = wikiggutil.Wikitext.Link
+    local LinkWithImage = wikiggutil.Wikitext.LinkWithImage
 
     -- this is so janky but i managed to make it work, i am so proud of myself now
     -- (see screens/town/craftscreenmulti.lua -> function CraftSinglePanel:_AddTabs())
@@ -518,17 +527,25 @@ function wikiggutil.Wikitext.ConstructableTable()
             local icon = def.icon or ""
             local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
             local filename = icon_base..".png"
-            out = out.."| "..wikiggutil.Wikitext.File(filename, ICON_SIZE).."\n"
+            out = out.."| "..wikiggutil.Wikitext.File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
 
             local name = def.pretty and def.pretty.name or ""
             out = out.."| "..name.."\n"
 
             local ingredient_strings = {}
             if def.ingredients ~= nil then
-                for ingredient,amount in pairs(def.ingredients) do
-                    local pretty = STRINGS.ITEMS.MATERIALS[ingredient]
-                    local name = pretty and pretty.name
-                    local str = Link(name).." x"..tostring(amount)
+                for ingredient_key,amount in pairs(def.ingredients) do
+                    local ingredient_def = Consumable.FindItem(ingredient_key)
+                    local name = ingredient_def.pretty and ingredient_def.pretty.name or ingredient_key
+
+                    local icon = ingredient_def.icon or ""
+                    local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+                    local filename = icon_base..".png"
+
+                    local name_str = LinkWithImage(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+                    local amount_str = "x"..tostring(amount)
+
+                    local str = name_str.." "..amount_str
                     table.insert(ingredient_strings, str)
                 end
             end
@@ -540,10 +557,15 @@ function wikiggutil.Wikitext.ConstructableTable()
             local gridsize_text = tostring(gridsize_w).."x"..tostring(gridsize_h)
             out = out.."| "..gridsize_text.."\n"
 
-            local reward_id, reward_count = Constructable.GetFirstCraftBounty(def)
+            local reward_id, amount = Constructable.GetFirstCraftBounty(def)
 	        local reward_def = Consumable.FindItem(reward_id)
-            local reward_name = reward_def.pretty and reward_def.pretty.name or reward_id
-            local craft_bounty_str = Link(reward_name).." x"..tostring(reward_count)
+            local name = reward_def.pretty and reward_def.pretty.name or reward_id
+            local icon = reward_def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+            local name_str = LinkWithImage(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+            local amount_str = "x"..tostring(amount)
+            local craft_bounty_str = name_str.." "..amount_str
             out = out.."| "..craft_bounty_str.."\n"
         end
 
