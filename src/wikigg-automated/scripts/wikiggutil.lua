@@ -60,7 +60,8 @@ function wikiggutil.Wikitext.File(filename, size)
     return "[[File:"..filename..size_opt.."]]"
 end
 
-function wikiggutil.Wikitext.LinkWithImage(str, dest, filename, size)
+function wikiggutil.Wikitext.FileLink(str, dest, filename, size)
+    -- file (image) that is a clickable link to a specific destination
     local link_str = wikiggutil.Wikitext.Link(str, dest)
     local size_opt = size and "|"..tostring(size).."px" or ""
     return "[[File:"..filename..size_opt.."|link="..link_str.."]]"
@@ -454,8 +455,7 @@ function wikiggutil.Wikitext.ConstructableTable()
     local lume = require "util.lume"
     local Constructable = require "defs.constructable"
     local Consumable = require"defs.consumable"
-    local Link = wikiggutil.Wikitext.Link
-    local LinkWithImage = wikiggutil.Wikitext.LinkWithImage
+    local FileLink = wikiggutil.Wikitext.FileLink
 
     -- this is so janky but i managed to make it work, i am so proud of myself now
     -- (see screens/town/craftscreenmulti.lua -> function CraftSinglePanel:_AddTabs())
@@ -542,7 +542,7 @@ function wikiggutil.Wikitext.ConstructableTable()
                     local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
                     local filename = icon_base..".png"
 
-                    local name_str = LinkWithImage(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+                    local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
                     local amount_str = "x"..tostring(amount)
 
                     local str = name_str.." "..amount_str
@@ -563,7 +563,7 @@ function wikiggutil.Wikitext.ConstructableTable()
             local icon = reward_def.icon or ""
             local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
             local filename = icon_base..".png"
-            local name_str = LinkWithImage(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+            local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
             local amount_str = "x"..tostring(amount)
             local craft_bounty_str = name_str.." "..amount_str
             out = out.."| "..craft_bounty_str.."\n"
