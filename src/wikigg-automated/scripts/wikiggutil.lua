@@ -401,6 +401,11 @@ end
 
 -- town decors
 function wikiggutil.Data:GetConstructables(filtertags)
+    -- returns number indexed table so it can be easily sorted after
+    -- (the key is the same as item.name anyway)
+    -- filtertags is table of tags to include
+    -- returns all items if no filtertags given
+
     local Constructable = require "defs.constructable"
 
     local all_items = {}
@@ -422,8 +427,6 @@ function wikiggutil.Data:GetConstructables(filtertags)
     local picked_items = {}
     for _,item in pairs(all_items) do
         if item_has_tags_any(item, filtertags) then
-            -- number indexed table so it can be easily sorted after
-            -- (the key is the same as item.name anyway)
             table.insert(picked_items, item)
         end
     end
