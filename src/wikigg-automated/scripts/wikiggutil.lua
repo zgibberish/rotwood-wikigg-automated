@@ -121,7 +121,7 @@ function wikiggutil.Wikitext.PowersTable()
     local out = ""
     -- table start
     out = out.."{| class=\"wikitable sortable mw-collapsible\" style=\"width: 95%\"\n"
-    out = out.."|-\n" -- table caption (empty for now?)
+    out = out.."|-\n"
     out = out.."! style=\"width: 148px\" | Icon "
     out = out.."!! style=\"width: 20%\" | Name "
     out = out.."!! Description "
@@ -246,7 +246,7 @@ function wikiggutil.Wikitext.GemsTable()
 
     local out = ""
     out = out.."{| class=\"wikitable\"\n" -- table start
-    out = out.."|-\n" -- table caption (empty for now?)
+    out = out.."|-\n"
     out = out.."! Icon !! Name !! Description !! α !! β !! γ !! Slot Match Bonus !! Type\n\n"
 
     for _,def in ipairs(gems) do
