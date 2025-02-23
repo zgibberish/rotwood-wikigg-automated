@@ -705,14 +705,17 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
         out = out.."| rowspan="..tostring(rows).." "
         out = out.."| "..Link(location_name_pretty).."\n"
 
-        out = out.."| ".."E".."\n"
-        out = out.."| "..reward_strings[0].."\n"
-
         for idx_lvl=1,max_level do
-            out = out.."|-".."\n"
+            if idx_lvl > 1 then
+                out = out.."|-".."\n"
+            end
+
             out = out.."| "..tostring(idx_lvl).."\n"
             out = out.."| "..reward_strings[idx_lvl].."\n"
         end
+        out = out.."|-".."\n"
+        out = out.."| ".."∞".."\n"
+        out = out.."| "..reward_strings[0].."\n"
 
         out = out.."\n"
     end
