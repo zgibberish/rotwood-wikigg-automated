@@ -34,7 +34,7 @@ imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
 Example: table of all obtainable Gems.
 
 ```lua
-imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
+imgui:SetClipboardText(wikiggutil.Wikitext.GemsTable())
 ```
 
 See `wikiggutil.lua` for more details.
