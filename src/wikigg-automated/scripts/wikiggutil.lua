@@ -4,6 +4,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsNavbox())
     imgui:SetClipboardText(wikiggutil.Wikitext.ConstructableTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.BiomeExplorationRewardsTable())
 ]]
 
 local wikiggutil = {}
@@ -570,6 +571,147 @@ function wikiggutil.Wikitext.ConstructableTable()
             local amount_str = "x"..tostring(amount)
             local craft_bounty_str = name_str.." "..amount_str
             out = out.."| "..craft_bounty_str.."\n"
+        end
+
+        out = out.."\n"
+    end
+
+    out = out.."|}" -- table end
+
+    return out
+end
+
+function wikiggutil.Data.GetBiomeExplorationRewards()
+    local MetaProgress = require "defs.metaprogression.metaprogress"
+    local all_rewards = MetaProgress.Items[MetaProgress.Slots.BIOME_EXPLORATION]
+    return all_rewards -- the wikitext function will handle sorting out this data
+end
+
+function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
+    local Biomes = require "defs.biomes"
+    local Consumable = require"defs.consumable"
+    local Power = require"defs.powers"
+    local Constructable = require"defs.constructable"
+    local Cosmetic = require "defs.cosmetics.cosmetics"
+    local Equipment = require "defs.equipment"
+    local File = wikiggutil.Wikitext.File
+    local Link = wikiggutil.Wikitext.Link
+    local FileLink = wikiggutil.Wikitext.FileLink
+
+    local locations_ordered = Biomes.location_unlock_order
+    local all_progression_rewards = wikiggutil.Data.GetBiomeExplorationRewards()
+
+    local out = ""
+    out = out.."{| class=\"wikitable\"\n" -- table start
+    out = out.."|-\n"
+    out = out.."! Location !! Level !! Rewards\n\n"
+
+    local function formatted_reward_string(reward)
+        local def = reward.def
+        if def == nil then return "REWARD_HAS_NO_DEF" end
+
+        if Power.Slots[def.slot] ~= nil then -- Power
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+            
+            local name = def:GetPrettyName()
+
+            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        elseif Cosmetic.IsSlot(def.slot) then -- Cosmetic
+            local slot = Cosmetic.Slots[def.slot]
+            
+            -- use icons we provide for the wiki
+            -- (can be slightly edited versions of ingame icons)
+            local icon = ""
+            local name = def.name
+            if slot == Cosmetic.Slots.PLAYER_TITLE then
+                icon = "cosmetic_icon_"..slot..".png"
+                name = STRINGS.COSMETICS.TITLES[string.upper(def.title_key)]
+            elseif slot == Cosmetic.Slots.PLAYER_BODYPART then
+                icon = "cosmetic_icon_"..slot..".png"
+            else
+                icon = "cosmetic_icon_generic.png"
+            end
+
+            return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        elseif Constructable.IsSlot(def.slot) then -- Constructable
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+            local name = def.pretty and def.pretty.name or def.name
+            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        elseif def.slot == Consumable.Slots.MATERIALS then -- Consumable
+            local name = def.pretty and def.pretty.name or def.name
+        
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+
+            local amount = reward.count
+
+            local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+            local amount_str = "x"..tostring(amount)
+
+            return name_str.." "..amount_str
+        elseif def.slot == Equipment.Slots.WEAPON then -- Equipment
+            return "STRING_NOT_IMPLEMENTED_Equipment"
+        end
+
+        return "UNRECOGNIZED_REWARD_TYPE"
+    end
+
+    for _,location_def in ipairs(locations_ordered) do
+        -- every location's biome exploration rewards (progressionmotherseed)
+        --   will generally include the following:
+        -- + endless_reward (type: MetaProgress.Reward)
+        -- + rewards (type: number indexed table of MetaProgress.RewardGroup,
+        --   each item includes multiple MetaProgress.Reward (s))
+
+        -- - MetaProgress.Reward can be of different types
+        --   (Power, Cosmetic, Constructable, Consumable).
+        -- and they dont make it clear what type a Reward is, you just gotta
+        --   check it's slot (reward.def.slot)
+        --   (see function MetaProgress.Reward:UnlockRewardForPlayer
+        --   in metareward.lua for more details).
+
+        -- for this one i will collect all data first before writing them out to a table
+
+        local progression = all_progression_rewards[location_def.id]
+
+        local endless_reward = progression.endless_reward
+        local rewards = progression.rewards
+        local max_level = #progression.rewards -- (e.g: 5)
+        local rows = max_level+1 -- 1 more row for endless reward
+
+        -- number indexed table, starting from 0 (0 is for endless reward)
+        -- containing formatted reward strings, wikitext ready
+        local reward_strings = {}
+        reward_strings[0] = formatted_reward_string(endless_reward)
+        for idx_lvl=1,max_level do
+            local individual_reward_strings = {}
+            local reward_group = rewards[idx_lvl]
+            local individual_rewards = reward_group:GetRewards()
+            for _,reward in ipairs(individual_rewards) do
+                table.insert(individual_reward_strings, formatted_reward_string(reward))
+            end
+            reward_strings[idx_lvl] = table.concat(individual_reward_strings, ", ")
+        end
+
+        -- generate table
+
+        local location_name_pretty = location_def.pretty and location_def.pretty.name or location_def.id
+        out = out.."|-".."\n"
+        out = out.."| rowspan="..tostring(rows).." "
+        out = out.."| "..Link(location_name_pretty).."\n"
+
+        out = out.."| ".."E".."\n"
+        out = out.."| "..reward_strings[0].."\n"
+
+        for idx_lvl=1,max_level do
+            out = out.."|-".."\n"
+            out = out.."| "..tostring(idx_lvl).."\n"
+            out = out.."| "..reward_strings[idx_lvl].."\n"
         end
 
         out = out.."\n"
