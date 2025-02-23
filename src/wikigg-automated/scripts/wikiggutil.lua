@@ -3,7 +3,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsNavbox())
-    imgui:SetClipboardText(wikiggutil.Wikitext.ConstructableTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.ConstructablesTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.BiomeExplorationRewardsTable())
 ]]
 
@@ -435,7 +435,7 @@ function wikiggutil.Data:GetConstructables(filtertags)
     return picked_items
 end
 
-function wikiggutil.Wikitext.ConstructableTable()
+function wikiggutil.Wikitext.ConstructablesTable()
     -- (gibberish)
     --NOTES
     --[[
