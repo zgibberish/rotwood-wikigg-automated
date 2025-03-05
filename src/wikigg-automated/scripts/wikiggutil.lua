@@ -5,6 +5,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsNavbox())
     imgui:SetClipboardText(wikiggutil.Wikitext.ConstructablesTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.BiomeExplorationRewardsTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.FoodTable())
 ]]
 
 local wikiggutil = {}
@@ -718,6 +719,149 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
         out = out.."| "..reward_strings[0].."\n"
 
         out = out.."\n"
+    end
+
+    out = out.."|}" -- table end
+
+    return out
+end
+
+function wikiggutil.Data.GetFoodDefs()
+    -- return number indexed, sorted table (by pretty name) of all food
+    local Food = require "defs.food"
+    local lume = require "util.lume"
+
+    local all_defs = Food.GetAllItems()
+    all_defs = lume.sort(all_defs, function(a, b)
+        local name_a = a.pretty and a.pretty.name or a.name
+        local name_b = b.pretty and b.pretty.name or b.name
+        return name_a < name_b
+    end)
+
+    return all_defs
+end
+
+function wikiggutil.Wikitext.FoodTable()
+-- (gibberish)
+    --NOTES
+    --[[
+        extract and upload food icons
+        + get rotwood textool (https://github.com/zgibberish/rwtextool)
+        $ git clone https://github.com/zgibberish/rwtextool
+        $ python -m venv rwtextool/venv
+        $ source rwtextool/venv/bin/activate
+        $ pip install PyTexturePacker pillow
+        + get data.zip from game files
+        $ unzip data.zip "images/icons_inventory*" 
+        $ find images/icons_inventory*.tex | xargs -I {} python rwtextool/src/tex2img.py -A {}
+        $ find images/*.* | xargs rm # remove tex and atlas files
+        $ find images/*/*food_cooked* | xargs -I {} mv {} images/ # move all pngs out
+        $ find images/*/ -type d | xargs rm -r # remove remaining folders
+        + upload the whole images/ folder to wiki.gg
+
+        get temp item icon too if needed
+        $ unzip data.zip "images/icons_ftf.*" 
+        $ python rwtextool/src/tex2img.py -A images/icons_ftf.tex
+        $ find images/*.* | xargs rm # remove tex and atlas files
+        $ mv images/icons_ftf/item_temp.png images/ # move png out
+        $ find images/*/ -type d | xargs rm -r # remove remaining folders
+        + upload the whole images/ folder to wiki.gg
+    ]]
+
+    local Consumable = require"defs.consumable"
+    local Power = require"defs.powers"
+    local File = wikiggutil.Wikitext.File
+    local Link = wikiggutil.Wikitext.Link
+    local FileLink = wikiggutil.Wikitext.FileLink
+
+    local all_defs = wikiggutil.Data.GetFoodDefs()
+
+    local out = ""
+    out = out.."{| class=\"wikitable sortable\"\n" -- table start
+    out = out.."|-\n"
+    out = out.."! Icon !! Name !! Description !! Power !! Ingredients !! Purchasable period (days) || Stock available || Restock cooldown (days)\n\n"
+
+    for _,def in ipairs(all_defs) do
+        out = out.."|-\n" -- row
+
+        local icon = def.icon or ""
+        local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+        local filename = icon_base..".png"
+        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
+
+        local name = def.pretty and def.pretty.name or ""
+        out = out.."| "..name.."\n"
+        
+        local desc = def.pretty and def.pretty.desc or ""
+        out = out.."| "..desc.."\n"
+
+        local power_def = Power.FindPowerByName(def.power)
+        do
+            local icon = power_def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+
+            local name = power_def:GetPrettyName()
+
+            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name).."\n"
+        end
+
+        local ingredient_strings = {}
+        if def.ingredients ~= nil then
+            for _,ingredient in ipairs(def.ingredients) do
+                local ingredient_key = ingredient.name
+                local amount = ingredient.count
+                local ingredient_def = Consumable.FindItem(ingredient_key)
+                local name = ingredient_def.pretty and ingredient_def.pretty.name or ingredient_key
+
+                local icon = ingredient_def.icon or ""
+                local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+                local filename = icon_base..".png"
+
+                local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+                local amount_str = "x"..tostring(amount)
+
+                local str = name_str.." "..amount_str
+                table.insert(ingredient_strings, str)
+            end
+        end
+        local formatted_ingredients = table.concat(ingredient_strings, ", ")
+        out = out.."| "..formatted_ingredients.."\n"
+
+        
+        if def.menu_data then -- the ones without stock and cooldown are permanent dishes
+            -- (explanation from food.lua)
+            -- time_available: min and max of how many days the food will be available for purchase
+            local time_available = def.menu_data.time_available
+            local time_available_str = tostring(time_available[1])
+            if time_available[1] ~= time_available[2] then
+                time_available_str = time_available_str.."-"..tostring(time_available[2])
+            end
+
+            -- num_available: min and max of how many times the food can be bought when it is on the menu
+            local num_available = def.menu_data.num_available
+            local num_available_str = tostring(num_available[1])
+            if num_available[1] ~= num_available[2] then
+                num_available_str = num_available_str.."-"..tostring(num_available[2])
+            end
+
+            -- menu_cooldown: how many days before the food can be added to the menu again
+            local menu_cooldown = def.menu_data.menu_cooldown
+            local menu_cooldown_str = tostring(menu_cooldown[1])
+            if menu_cooldown[1] ~= menu_cooldown[2] then
+                menu_cooldown_str = menu_cooldown_str.."-"..tostring(menu_cooldown[2])
+            end
+
+            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..time_available_str.."\n"
+            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..num_available_str.."\n"
+            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..menu_cooldown_str.."\n"
+        else
+            out = out.."| colspan=3 style=\"text-align:center;\" | ".."Permanent Food".."\n"
+        end
+        
     end
 
     out = out.."|}" -- table end
