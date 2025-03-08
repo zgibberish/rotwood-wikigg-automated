@@ -73,6 +73,71 @@ function wikiggutil.Wikitext.FileLink(str, dest, filename, size)
     return "[[File:"..filename..size_opt.."|link="..link_str.."]]"
 end
 
+function wikiggutil.Wikitext.RewardToString(reward)
+    local Consumable = require"defs.consumable"
+    local Power = require"defs.powers"
+    local Constructable = require"defs.constructable"
+    local Cosmetic = require "defs.cosmetics.cosmetics"
+    local Equipment = require "defs.equipment"    
+
+    local File = wikiggutil.Wikitext.File
+    local Link = wikiggutil.Wikitext.Link
+    local FileLink = wikiggutil.Wikitext.FileLink
+
+    local def = reward.def
+    if def == nil then return "REWARD_HAS_NO_DEF" end
+
+    if Power.Slots[def.slot] ~= nil then -- Power
+        local icon = def.icon or ""
+        local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+        local filename = icon_base..".png"
+        
+        local name = def:GetPrettyName()
+
+        return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+    elseif Cosmetic.IsSlot(def.slot) then -- Cosmetic
+        local slot = Cosmetic.Slots[def.slot]
+        
+        -- use icons we provide for the wiki
+        -- (can be slightly edited versions of ingame icons)
+        local icon = ""
+        local name = def.name
+        if slot == Cosmetic.Slots.PLAYER_TITLE then
+            icon = "cosmetic_icon_"..slot..".png"
+            name = STRINGS.COSMETICS.TITLES[string.upper(def.title_key)]
+        elseif slot == Cosmetic.Slots.PLAYER_BODYPART then
+            icon = "cosmetic_icon_"..slot..".png"
+        else
+            icon = "cosmetic_icon_generic.png"
+        end
+
+        return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+    elseif Constructable.IsSlot(def.slot) then -- Constructable
+        local icon = def.icon or ""
+        local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+        local filename = icon_base..".png"
+        local name = def.pretty and def.pretty.name or def.name
+        return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+    elseif def.slot == Consumable.Slots.MATERIALS then -- Consumable
+        local name = def.pretty and def.pretty.name or def.name
+    
+        local icon = def.icon or ""
+        local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+        local filename = icon_base..".png"
+
+        local amount = reward.count
+
+        local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+        local amount_str = "x"..tostring(amount)
+
+        return name_str.." "..amount_str
+    elseif def.slot == Equipment.Slots.WEAPON then -- Equipment
+        return "STRING_NOT_IMPLEMENTED_Equipment"
+    end
+
+    return "UNRECOGNIZED_REWARD_TYPE"
+end
+
 function wikiggutil.Data.GetPowerDefs()
     local Power = require "defs.powers"
     local lume = require "util.lume"
@@ -601,9 +666,9 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
     local Constructable = require"defs.constructable"
     local Cosmetic = require "defs.cosmetics.cosmetics"
     local Equipment = require "defs.equipment"
-    local File = wikiggutil.Wikitext.File
+
     local Link = wikiggutil.Wikitext.Link
-    local FileLink = wikiggutil.Wikitext.FileLink
+    local RewardToString = wikiggutil.Wikitext.RewardToString
 
     local locations_ordered = Biomes.location_unlock_order
     local all_progression_rewards = wikiggutil.Data.GetBiomeExplorationRewards()
@@ -612,61 +677,6 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
     out = out.."{| class=\"wikitable\"\n" -- table start
     out = out.."|-\n"
     out = out.."! Location !! Level !! Rewards\n\n"
-
-    local function formatted_reward_string(reward)
-        local def = reward.def
-        if def == nil then return "REWARD_HAS_NO_DEF" end
-
-        if Power.Slots[def.slot] ~= nil then -- Power
-            local icon = def.icon or ""
-            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-            local filename = icon_base..".png"
-            
-            local name = def:GetPrettyName()
-
-            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
-        elseif Cosmetic.IsSlot(def.slot) then -- Cosmetic
-            local slot = Cosmetic.Slots[def.slot]
-            
-            -- use icons we provide for the wiki
-            -- (can be slightly edited versions of ingame icons)
-            local icon = ""
-            local name = def.name
-            if slot == Cosmetic.Slots.PLAYER_TITLE then
-                icon = "cosmetic_icon_"..slot..".png"
-                name = STRINGS.COSMETICS.TITLES[string.upper(def.title_key)]
-            elseif slot == Cosmetic.Slots.PLAYER_BODYPART then
-                icon = "cosmetic_icon_"..slot..".png"
-            else
-                icon = "cosmetic_icon_generic.png"
-            end
-
-            return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
-        elseif Constructable.IsSlot(def.slot) then -- Constructable
-            local icon = def.icon or ""
-            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-            local filename = icon_base..".png"
-            local name = def.pretty and def.pretty.name or def.name
-            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
-        elseif def.slot == Consumable.Slots.MATERIALS then -- Consumable
-            local name = def.pretty and def.pretty.name or def.name
-        
-            local icon = def.icon or ""
-            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-            local filename = icon_base..".png"
-
-            local amount = reward.count
-
-            local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
-            local amount_str = "x"..tostring(amount)
-
-            return name_str.." "..amount_str
-        elseif def.slot == Equipment.Slots.WEAPON then -- Equipment
-            return "STRING_NOT_IMPLEMENTED_Equipment"
-        end
-
-        return "UNRECOGNIZED_REWARD_TYPE"
-    end
 
     for _,location_def in ipairs(locations_ordered) do
         -- every location's biome exploration rewards (progressionmotherseed)
@@ -694,13 +704,13 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
         -- number indexed table, starting from 0 (0 is for endless reward)
         -- containing formatted reward strings, wikitext ready
         local reward_strings = {}
-        reward_strings[0] = formatted_reward_string(endless_reward)
+        reward_strings[0] = RewardToString(endless_reward)
         for idx_lvl=1,max_level do
             local individual_reward_strings = {}
             local reward_group = rewards[idx_lvl]
             local individual_rewards = reward_group:GetRewards()
             for _,reward in ipairs(individual_rewards) do
-                table.insert(individual_reward_strings, formatted_reward_string(reward))
+                table.insert(individual_reward_strings, RewardToString(reward))
             end
             reward_strings[idx_lvl] = table.concat(individual_reward_strings, ", ")
         end
@@ -919,15 +929,10 @@ function wikiggutil.Wikitext.MasteriesTable()
 
     local lume = require "util.lume"
 
-    local Consumable = require"defs.consumable"
-    local Power = require"defs.powers"
-    local Constructable = require"defs.constructable"
-    local Cosmetic = require "defs.cosmetics.cosmetics"
-    local Equipment = require "defs.equipment"
-
     local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
     local FileLink = wikiggutil.Wikitext.FileLink
+    local RewardToString = wikiggutil.Wikitext.RewardToString
 
     local UpvalueHacker = require("tools.upvaluehacker")
     local MasteryScreenMulti = require "screens.town.masteryscreenmulti"
@@ -999,63 +1004,7 @@ function wikiggutil.Wikitext.MasteriesTable()
 
     -- d_view(tab_keys_ordered)
     -- d_view(all_tab_items)
-
-    --TODO (gibberish): move this to the util table
-    local function formatted_reward_string(reward)
-        local def = reward.def
-        if def == nil then return "REWARD_HAS_NO_DEF" end
-
-        if Power.Slots[def.slot] ~= nil then -- Power
-            local icon = def.icon or ""
-            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-            local filename = icon_base..".png"
-            
-            local name = def:GetPrettyName()
-
-            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
-        elseif Cosmetic.IsSlot(def.slot) then -- Cosmetic
-            local slot = Cosmetic.Slots[def.slot]
-            
-            -- use icons we provide for the wiki
-            -- (can be slightly edited versions of ingame icons)
-            local icon = ""
-            local name = def.name
-            if slot == Cosmetic.Slots.PLAYER_TITLE then
-                icon = "cosmetic_icon_"..slot..".png"
-                name = STRINGS.COSMETICS.TITLES[string.upper(def.title_key)]
-            elseif slot == Cosmetic.Slots.PLAYER_BODYPART then
-                icon = "cosmetic_icon_"..slot..".png"
-            else
-                icon = "cosmetic_icon_generic.png"
-            end
-
-            return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
-        elseif Constructable.IsSlot(def.slot) then -- Constructable
-            local icon = def.icon or ""
-            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-            local filename = icon_base..".png"
-            local name = def.pretty and def.pretty.name or def.name
-            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
-        elseif def.slot == Consumable.Slots.MATERIALS then -- Consumable
-            local name = def.pretty and def.pretty.name or def.name
-        
-            local icon = def.icon or ""
-            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-            local filename = icon_base..".png"
-
-            local amount = reward.count
-
-            local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
-            local amount_str = "x"..tostring(amount)
-
-            return name_str.." "..amount_str
-        elseif def.slot == Equipment.Slots.WEAPON then -- Equipment
-            return "STRING_NOT_IMPLEMENTED_Equipment"
-        end
-
-        return "UNRECOGNIZED_REWARD_TYPE"
-    end
-
+    
     local out = ""
     out = out.."{| class=\"wikitable sortable\"\n" -- table start
     out = out.."|-\n"
@@ -1089,7 +1038,7 @@ function wikiggutil.Wikitext.MasteriesTable()
             local reward_strings = {}
             -- table ({}) of MetaProgress.Reward
             for _,reward in ipairs(def.rewards) do
-                table.insert(reward_strings, formatted_reward_string(reward))
+                table.insert(reward_strings, RewardToString(reward))
             end
             local rewards_string = table.concat(reward_strings, ", ")
             out = out.."| "..rewards_string.."\n"
