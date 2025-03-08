@@ -162,24 +162,6 @@ function wikiggutil.Data.GetPowerDefs()
 end
 
 function wikiggutil.Wikitext.PowersTable()
-    -- (gibberish)
-    --NOTES
-    --[[
-        extract and upload power icons
-        + get rotwood textool (https://github.com/zgibberish/rwtextool)
-        $ git clone https://github.com/zgibberish/rwtextool
-        $ python -m venv rwtextool/venv
-        $ source rwtextool/venv/bin/activate
-        $ pip install PyTexturePacker pillow
-        + get data.zip from game files
-        $ unzip data.zip "images/ui_ftf_power_icons*" 
-        $ find images/ui_ftf_power_icons*.tex | xargs -I {} python rwtextool/src/tex2img.py -A {}
-        $ find images/*.* | xargs rm # remove tex and atlas files
-        $ find images/ui_ftf_power_icons*/* | xargs -I {} mv {} images/ # move all pngs out
-        $ find images/*/ -type d | xargs rm -r # remove remaining folders
-        + upload the whole images/ folder to wiki.gg
-    ]]
-
     local Power = require "defs.powers"
     local itemforge = require "defs.itemforge"
     
@@ -289,24 +271,6 @@ function wikiggutil.Data.GetGemDefs()
 end
 
 function wikiggutil.Wikitext.GemsTable()
-    -- (gibberish)
-    --NOTES
-    --[[
-        extract and upload gem icons
-        + get rotwood textool (https://github.com/zgibberish/rwtextool)
-        $ git clone https://github.com/zgibberish/rwtextool
-        $ python -m venv rwtextool/venv
-        $ source rwtextool/venv/bin/activate
-        $ pip install PyTexturePacker pillow
-        + get data.zip from game files
-        $ unzip data.zip "images/icons_inventory*" 
-        $ find images/icons_inventory*.tex | xargs -I {} python rwtextool/src/tex2img.py -A {}
-        $ find images/*.* | xargs rm # remove tex and atlas files
-        $ find images/*/icon_gem_* | xargs -I {} mv {} images/ # move all pngs out
-        $ find images/*/ -type d | xargs rm -r # remove remaining folders
-        + upload the whole images/ folder to wiki.gg
-    ]]
-
     local Power = require "defs.powers" -- read gem effect stats from gem power
     local itemutil = require"util.itemutil"
 
@@ -509,26 +473,6 @@ function wikiggutil.Data.GetConstructables(filtertags)
 end
 
 function wikiggutil.Wikitext.ConstructablesTable()
-    -- (gibberish)
-    --NOTES
-    --[[
-        extract and upload prop icons
-        + get rotwood textool (https://github.com/zgibberish/rwtextool)
-        $ git clone https://github.com/zgibberish/rwtextool
-        $ python -m venv rwtextool/venv
-        $ source rwtextool/venv/bin/activate
-        $ pip install PyTexturePacker pillow
-        + get data.zip from game files
-        $ unzip data.zip "images/inv_town_decoration*" 
-        $ find images/inv_town_decoration*.tex | xargs -I {} python rwtextool/src/tex2img.py -A {}
-        $ find images/*.* | xargs rm # remove tex and atlas files
-        $ find images/*/town_prop_* | xargs -I {} mv {} images/ # move all pngs out
-        $ find images/*/ -type d | xargs rm -r # remove remaining folders
-        + upload the whole images/ folder to wiki.gg
-
-        + For ingredient icons just upload all icons_inventory tex :/
-    ]]
-
     local lume = require "util.lume"
     local Constructable = require "defs.constructable"
     local Consumable = require"defs.consumable"
@@ -756,32 +700,6 @@ function wikiggutil.Data.GetFoodDefs()
 end
 
 function wikiggutil.Wikitext.FoodTable()
--- (gibberish)
-    --NOTES
-    --[[
-        extract and upload food icons
-        + get rotwood textool (https://github.com/zgibberish/rwtextool)
-        $ git clone https://github.com/zgibberish/rwtextool
-        $ python -m venv rwtextool/venv
-        $ source rwtextool/venv/bin/activate
-        $ pip install PyTexturePacker pillow
-        + get data.zip from game files
-        $ unzip data.zip "images/icons_inventory*" 
-        $ find images/icons_inventory*.tex | xargs -I {} python rwtextool/src/tex2img.py -A {}
-        $ find images/*.* | xargs rm # remove tex and atlas files
-        $ find images/*/*food_cooked* | xargs -I {} mv {} images/ # move all pngs out
-        $ find images/*/ -type d | xargs rm -r # remove remaining folders
-        + upload the whole images/ folder to wiki.gg
-
-        get temp item icon too if needed
-        $ unzip data.zip "images/icons_ftf.*" 
-        $ python rwtextool/src/tex2img.py -A images/icons_ftf.tex
-        $ find images/*.* | xargs rm # remove tex and atlas files
-        $ mv images/icons_ftf/item_temp.png images/ # move png out
-        $ find images/*/ -type d | xargs rm -r # remove remaining folders
-        + upload the whole images/ folder to wiki.gg
-    ]]
-
     local Consumable = require"defs.consumable"
     local Power = require"defs.powers"
     local File = wikiggutil.Wikitext.File
