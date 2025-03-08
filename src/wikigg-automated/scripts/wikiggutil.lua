@@ -1,3 +1,5 @@
+--TODO (gibberish) clean up all FileLink/File/Link require and usage code
+
 --[[
     using ingame console:
     imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
@@ -6,6 +8,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.ConstructablesTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.BiomeExplorationRewardsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.FoodTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.MasteriesTable())
 ]]
 
 local wikiggutil = {}
@@ -404,6 +407,8 @@ end
 
 -- town decors
 function wikiggutil.Data:GetConstructables(filtertags)
+    --TODO (gibberish): fix this : thingy
+
     -- returns number indexed table so it can be easily sorted after
     -- (the key is the same as item.name anyway)
     -- filtertags is table of tags to include
@@ -863,6 +868,237 @@ function wikiggutil.Wikitext.FoodTable()
             out = out.."| colspan=3 style=\"text-align:center;\" | ".."Permanent Food".."\n"
         end
         
+    end
+
+    out = out.."|}" -- table end
+
+    return out
+end
+
+function wikiggutil.Data.GetMasteries(mastery_type)
+    -- returns SORTED number indexed table so it can be easily sorted after
+    -- (the key is the same as item.name anyway)
+    -- returns all items if no mastery_type given
+
+    local Mastery = require("defs.mastery.mastery")
+
+    local all_items = {}
+    local ordered_slots = shallowcopy(Mastery.GetOrderedSlots())
+    for _, slot in ipairs(ordered_slots) do 
+		local slot_items = Mastery.Items[slot]
+        for key,item in pairs(slot_items) do
+            table.insert(all_items, item)
+        end
+	end
+
+    local picked_items
+
+    if not mastery_type then
+        picked_items = all_items
+    else
+        picked_items = {}
+        for _,item in ipairs(all_items) do
+            if item.mastery_type == mastery_type then
+                table.insert(picked_items, item)
+            end
+        end
+    end
+
+    local lume = require "util.lume"
+    picked_items = lume.sort(picked_items, function(a, b)
+        return a.order < b.order -- property of a mastery def
+    end)
+
+    return picked_items
+end
+
+function wikiggutil.Wikitext.MasteriesTable()
+    --NOTE (PLEASE READ): mastery strings has many special elements
+    -- so text from this generated table WILL NEED MANUAL CLEANUP
+    -- before pushing to wiki
+
+    local lume = require "util.lume"
+
+    local Consumable = require"defs.consumable"
+    local Power = require"defs.powers"
+    local Constructable = require"defs.constructable"
+    local Cosmetic = require "defs.cosmetics.cosmetics"
+    local Equipment = require "defs.equipment"
+
+    local File = wikiggutil.Wikitext.File
+    local Link = wikiggutil.Wikitext.Link
+    local FileLink = wikiggutil.Wikitext.FileLink
+
+    local UpvalueHacker = require("tools.upvaluehacker")
+    local MasteryScreenMulti = require "screens.town.masteryscreenmulti"
+    local MasterySinglePanel = UpvalueHacker.GetUpvalue(MasteryScreenMulti._ctor, "MasterySinglePanel")
+    
+    local dummy_player = CreateEntity() -- will be removed after this section
+    dummy_player:AddComponent("unlocktracker")
+    dummy_player.components.unlocktracker.IsWeaponTypeUnlocked = function(self, id)
+        return true
+    end
+
+    local dummy_panel = {
+        GetOwningPlayer = function(self) return dummy_player end,
+        ShouldShowMastery = function(self) return true end,
+        tab_buttons = {},
+        tabs = {
+            num_tabs = 0,
+            SetTabSpacing = function(self) return self end,
+            Layout = function(self) return self end,
+            AddTextTab = function(tab_self, icon, size)
+                tab_self.num_tabs = tab_self.num_tabs + 1
+                local ret
+                ret = { -- dummy tabwidget
+                    icon = icon,
+                    icon_size = size,
+                    SetToolTip = function(ret_self, tooltip) ret_self.tooltip = tooltip; return ret_self end,
+                    SetStarIcon = function(ret_self) return ret_self end,
+                    AddClaimableIcon = function(ret_self) return ret_self end,
+                    category = nil, -- mastery_type
+                    tab_idx = tab_self.num_tabs,
+                }
+                return ret
+            end,
+        },
+        GetOrderedTabs = function(self)
+            local ordered_tabwidgets = {}
+            for category,tabwidget in pairs(self.tab_buttons) do
+                table.insert(ordered_tabwidgets, tabwidget)
+            end
+            ordered_tabwidgets = lume.sort(ordered_tabwidgets, function(a,b)
+                return a.tab_idx < b.tab_idx
+            end)
+
+            local res = {}
+            for _,tabwidget in ipairs(ordered_tabwidgets) do
+                table.insert(res, {
+                    category = tabwidget.category,
+                    tooltip = tabwidget.tooltip,
+                })
+            end
+
+            return res
+        end,
+    }
+    MasterySinglePanel._RefreshTabs(dummy_panel)
+    local tabs = dummy_panel:GetOrderedTabs()
+    dummy_player:Remove()
+
+    local tab_keys_ordered = {}
+    local tab_keys_pretty = {}
+    local all_tab_items = {}
+    for _,tab in ipairs(tabs) do
+        table.insert(tab_keys_ordered, tab.category)
+        tab_keys_pretty[tab.category] = tab.tooltip
+
+        local defs = wikiggutil.Data.GetMasteries(tab.category)
+        all_tab_items[tab.category] = defs
+    end
+
+    -- d_view(tab_keys_ordered)
+    -- d_view(all_tab_items)
+
+    --TODO (gibberish): move this to the util table
+    local function formatted_reward_string(reward)
+        local def = reward.def
+        if def == nil then return "REWARD_HAS_NO_DEF" end
+
+        if Power.Slots[def.slot] ~= nil then -- Power
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+            
+            local name = def:GetPrettyName()
+
+            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        elseif Cosmetic.IsSlot(def.slot) then -- Cosmetic
+            local slot = Cosmetic.Slots[def.slot]
+            
+            -- use icons we provide for the wiki
+            -- (can be slightly edited versions of ingame icons)
+            local icon = ""
+            local name = def.name
+            if slot == Cosmetic.Slots.PLAYER_TITLE then
+                icon = "cosmetic_icon_"..slot..".png"
+                name = STRINGS.COSMETICS.TITLES[string.upper(def.title_key)]
+            elseif slot == Cosmetic.Slots.PLAYER_BODYPART then
+                icon = "cosmetic_icon_"..slot..".png"
+            else
+                icon = "cosmetic_icon_generic.png"
+            end
+
+            return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        elseif Constructable.IsSlot(def.slot) then -- Constructable
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+            local name = def.pretty and def.pretty.name or def.name
+            return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        elseif def.slot == Consumable.Slots.MATERIALS then -- Consumable
+            local name = def.pretty and def.pretty.name or def.name
+        
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+
+            local amount = reward.count
+
+            local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
+            local amount_str = "x"..tostring(amount)
+
+            return name_str.." "..amount_str
+        elseif def.slot == Equipment.Slots.WEAPON then -- Equipment
+            return "STRING_NOT_IMPLEMENTED_Equipment"
+        end
+
+        return "UNRECOGNIZED_REWARD_TYPE"
+    end
+
+    local out = ""
+    out = out.."{| class=\"wikitable sortable\"\n" -- table start
+    out = out.."|-\n"
+    out = out.."! Icon !! Name !! Description !! Max Progress !! Rewards !! Difficulty\n\n"
+
+    for _,tab_key in ipairs(tab_keys_ordered) do
+        local tab_items = all_tab_items[tab_key]
+       
+        -- tab key row
+        out = out.."|-\n" 
+        out = out.."! colspan=6 | "..tab_keys_pretty[tab_key].."\n"
+
+        for _,def in ipairs(tab_items) do
+            out = out.."|-\n" -- row
+
+            local icon = def.icon or ""
+            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
+            local filename = icon_base..".png"
+            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
+
+            local name = def.pretty and def.pretty.name or ""
+            out = out.."| "..name.."\n"
+
+            local desc = def.pretty and def.pretty.desc or ""
+            desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
+            out = out.."| "..desc.."\n"
+
+            local max_progress = def.max_progress
+            out = out.."| "..tostring(max_progress).."\n"
+
+            local reward_strings = {}
+            -- table ({}) of MetaProgress.Reward
+            for _,reward in ipairs(def.rewards) do
+                table.insert(reward_strings, formatted_reward_string(reward))
+            end
+            local rewards_string = table.concat(reward_strings, ", ")
+            out = out.."| "..rewards_string.."\n"
+            
+            local difficulty = def.difficulty
+            out = out.."| "..difficulty.."\n"
+        end
+
+        out = out.."\n"
     end
 
     out = out.."|}" -- table end
