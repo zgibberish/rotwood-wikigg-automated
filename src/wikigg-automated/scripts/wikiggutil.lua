@@ -8,7 +8,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.ConstructablesTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.BiomeExplorationRewardsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.FoodTable())
-    imgui:SetClipboardText(wikiggutil.Wikitext.MasteriesTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.MasteriesTable())a
 ]]
 
 local wikiggutil = {}
@@ -471,9 +471,7 @@ function wikiggutil.Wikitext.GemsNavbox()
 end
 
 -- town decors
-function wikiggutil.Data:GetConstructables(filtertags)
-    --TODO (gibberish): fix this : thingy
-
+function wikiggutil.Data.GetConstructables(filtertags)
     -- returns number indexed table so it can be easily sorted after
     -- (the key is the same as item.name anyway)
     -- filtertags is table of tags to include
@@ -579,7 +577,7 @@ function wikiggutil.Wikitext.ConstructablesTable()
     for _,tab in ipairs(tabs) do
         table.insert(tab_keys_ordered, tab.category)
 
-        local defs = wikiggutil.Data:GetConstructables(tab.tags)
+        local defs = wikiggutil.Data.GetConstructables(tab.tags)
         defs = lume.sort(defs, function(a,b) return a.pretty.name < b.pretty.name end)
 
         all_tab_items[tab.category] = defs
