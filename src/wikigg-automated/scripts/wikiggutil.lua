@@ -278,9 +278,9 @@ function wikiggutil.Wikitext.FileLink(str, dest, filename, size)
 end
 
 function wikiggutil.Wikitext.RewardToString(reward)
-    local Consumable = require"defs.consumable"
-    local Power = require"defs.powers"
-    local Constructable = require"defs.constructable"
+    local Consumable = require "defs.consumable"
+    local Power = require "defs.powers"
+    local Constructable = require "defs.constructable"
     local Cosmetic = require "defs.cosmetics.cosmetics"
     local Equipment = require "defs.equipment"    
 
@@ -485,7 +485,7 @@ end
 
 function wikiggutil.Wikitext.GemsTable()
     local Power = require "defs.powers" -- read gem effect stats from gem power
-    local itemutil = require"util.itemutil"
+    local itemutil = require "util.itemutil"
 
     local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
@@ -688,14 +688,14 @@ end
 function wikiggutil.Wikitext.ConstructablesTable()
     local lume = require "util.lume"
     local Constructable = require "defs.constructable"
-    local Consumable = require"defs.consumable"
+    local Consumable = require "defs.consumable"
 
     local File = wikiggutil.Wikitext.File
     local FileLink = wikiggutil.Wikitext.FileLink
 
     -- this is so janky but i managed to make it work, i am so proud of myself now
     -- (see screens/town/craftscreenmulti.lua -> function CraftSinglePanel:_AddTabs())
-    local UpvalueHacker = require("tools.upvaluehacker")
+    local UpvalueHacker = require "tools.upvaluehacker"
     local CraftScreenMulti = require "screens.town.craftscreenmulti"
     local CraftSinglePanel = UpvalueHacker.GetUpvalue(CraftScreenMulti._ctor, "CraftSinglePanel")
     local dummy_CSP = {
@@ -913,8 +913,8 @@ function wikiggutil.Data.GetFoodDefs()
 end
 
 function wikiggutil.Wikitext.FoodTable()
-    local Consumable = require"defs.consumable"
-    local Power = require"defs.powers"
+    local Consumable = require "defs.consumable"
+    local Power = require "defs.powers"
     local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
     local FileLink = wikiggutil.Wikitext.FileLink
@@ -1019,7 +1019,7 @@ function wikiggutil.Data.GetMasteries(mastery_type)
     -- (the key is the same as item.name anyway)
     -- returns all items if no mastery_type given
 
-    local Mastery = require("defs.mastery.mastery")
+    local Mastery = require "defs.mastery.mastery"
 
     local all_items = {}
     local ordered_slots = shallowcopy(Mastery.GetOrderedSlots())
@@ -1056,14 +1056,14 @@ function wikiggutil.Wikitext.MasteriesTable()
     -- so text from this generated table WILL NEED MANUAL CLEANUP
     -- before pushing to wiki
 
-    local Mastery = require("defs.mastery.mastery")
+    local Mastery = require "defs.mastery.mastery"
     local lume = require "util.lume"
     local itemforge = require "defs.itemforge"
 
     local File = wikiggutil.Wikitext.File
     local RewardToString = wikiggutil.Wikitext.RewardToString
 
-    local UpvalueHacker = require("tools.upvaluehacker")
+    local UpvalueHacker = require "tools.upvaluehacker"
     local MasteryScreenMulti = require "screens.town.masteryscreenmulti"
     local MasterySinglePanel = UpvalueHacker.GetUpvalue(MasteryScreenMulti._ctor, "MasterySinglePanel")
     
