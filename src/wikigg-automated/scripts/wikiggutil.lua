@@ -6,7 +6,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.ConstructablesTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.BiomeExplorationRewardsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.FoodTable())
-    imgui:SetClipboardText(wikiggutil.Wikitext.MasteriesTable())a
+    imgui:SetClipboardText(wikiggutil.Wikitext.MasteriesTable())
 ]]
 
 local wikiggutil = {}
@@ -36,7 +36,7 @@ wikiggutil.Const.ICON_SIZE_SMALL = 24 -- used for stuff like ingredient icons (i
 
 -- turns every occurrence of "abc" in provided string into a link ( [[]] )
 -- that shows "abc" and links to remap_table["abc"] (override) or just "abc".
-function wikiggutil.Util.str_remap_tolinks(str, remap_table)
+function wikiggutil.Util.StringRemapLinks(str, remap_table)
     --TODO (gibberish): this is terrible, please rewrite this later
     local Link = wikiggutil.Wikitext.Link
 
@@ -185,7 +185,7 @@ function wikiggutil.Wikitext.PowersTable()
     
     local File = wikiggutil.Wikitext.File
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
-    local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
+    local StringRemapLinks = wikiggutil.Util.StringRemapLinks
 
     local powers = wikiggutil.Data.GetPowerDefs()
    
@@ -234,7 +234,7 @@ function wikiggutil.Wikitext.PowersTable()
             desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
 
             -- make specific words links to their own page
-            desc = str_remap_tolinks(desc, MAP_LINKS)
+            desc = StringRemapLinks(desc, MAP_LINKS)
 
             table.insert(desc_strings, desc)
         end
@@ -313,7 +313,7 @@ function wikiggutil.Wikitext.GemsTable()
     local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
-    local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
+    local StringRemapLinks = wikiggutil.Util.StringRemapLinks
 
     local gems = wikiggutil.Data.GetGemDefs()
 
@@ -338,7 +338,7 @@ function wikiggutil.Wikitext.GemsTable()
         local desc = def.pretty and def.pretty.slotted_desc or ""
         desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
         -- make specific words links to their own page
-        desc = str_remap_tolinks(desc, MAP_LINKS)
+        desc = StringRemapLinks(desc, MAP_LINKS)
         out = out.."| "..desc.."\n"
 
         local stat_str = {}
