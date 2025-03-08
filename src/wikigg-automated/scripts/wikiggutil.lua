@@ -52,6 +52,211 @@ function wikiggutil.Util.StringRemapLinks(str, remap_table)
     return ret
 end
 
+function wikiggutil.Wikitext.FormattedString(str)
+    -- try to convert rotwood text formatting to wikitext text formatting
+    -- (see util.lua ApplyFormatting function)
+
+    local function ParseFormattingColour( attr )
+        local jj, kk, subattr, clrattr = attr:find( "^(.*)#(.+)$" )
+        if clrattr then
+            if clrattr == "0" then
+                -- special case, we don't want this to be expanded to 0fffffff
+                return 0
+            elseif tonumber( clrattr, 16 ) then
+                while #clrattr < 8 do clrattr = clrattr .. "f" end
+                return tonumber( clrattr, 16 )
+            elseif UICOLORS[ clrattr ] then
+                return RGBToHex(UICOLORS[clrattr])
+            end
+        end
+    end
+    
+    
+    -- Convert a pad width into the padding string.
+    local function EvaluateNbspPad(pad_char_count)
+        if pad_char_count then
+            pad_char_count = math.floor(pad_char_count)
+            local nbsp = "\u{00a0}"
+            return nbsp:rep(pad_char_count)
+        end
+        return ""
+    end
+    
+    -- <p img='images/ui_ftf_shop/displayvalue_up.tex' color=BONUS>
+    -- <p img='images/ui_ftf_shop/displayvalue_up.tex' color=40AB38 scale=1.2 rpad=1>
+    local function ParseImageInformation( attr )
+        local lowerattr = string.lower(attr)
+        local img = string.match(lowerattr, [[img=['’]([^'’]+)]])
+        local scale = string.match(lowerattr, [[scale=([%d.]+)]])
+        local rotation = string.match(lowerattr, [[rotation=(-?[%d.]+)]])
+        local rpad = string.match(lowerattr, [[rpad=([%d.]+)]])
+        rpad = EvaluateNbspPad(rpad)
+        local colortag = string.match(attr, [[color=([(%w_).]+)]])
+        local color = nil
+        if colortag then
+            color = ParseFormattingColour( "#"..colortag )
+        end
+        return img, scale, color, rotation, rpad
+    end
+    
+    local function ParseFontScale( attr )
+        local scale = tonumber(attr)
+        return scale
+    end
+
+    local textnode = nil
+	local can_italic = true
+	local can_bold = true
+
+    -- dummy playercontroller
+	local playercontroller = {
+        _GetInputTuple = function(self)
+            -- (see playercontroller component script)
+            return "keyboard", 1
+        end,
+        GetTexForControlName = function(self, control_key)
+            return TheInput:GetTexForControlName(control_key, self:_GetInputTuple())
+        end,
+        GetInputImageAtlas = function(self)
+            return TheInput:GetDeviceImageAtlas(self:_GetInputTuple())
+        end
+    }
+
+    if textnode then
+        textnode:ClearMarkup()
+    end
+
+	local j, k, sel, attr
+	local spans = {}
+	local findstartpos = 1
+	repeat
+		-- find colourization.
+		j, k, sel, attr = str:find( "<([#!bBcCsSiIuUpPzZ/]?)([^>]*)>", findstartpos )
+		if j then
+			local validmarkup = false
+			if sel == '/' then
+				-- Close the last span
+				local attr = table.remove( spans )
+				local sel = table.remove( spans )
+				local start_idx = table.remove( spans )
+				local end_idx = j - 1
+				if textnode then
+
+					local pre_segment = str:sub(1, start_idx)
+					local utf8_start_idx = string.utf8len(pre_segment)
+					local segment = str:sub(1, end_idx)
+					local utf8_end_idx = string.utf8len(segment)
+
+					if sel == "b" then
+						validmarkup = true
+						if can_bold then
+							textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_BOLD )
+						end
+						-- else: language doesn't support bold, but still consume the markup.
+					elseif sel == "i" then
+						validmarkup = true
+						if can_italic then
+							textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_ITALIC )
+						end
+						-- else: language doesn't support italic, but still consume the markup.
+					elseif sel == "u" then
+						validmarkup = true
+						local clr = ParseFormattingColour( attr )
+						textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_UNDERLINE, clr )
+					elseif sel == "s" then
+						validmarkup = true
+						textnode:AddMarkup( start_idx, end_idx, MARKUP_SHADOW )
+					elseif sel == "z" then
+						validmarkup = true
+						local size = ParseFontScale(attr)
+						textnode:AddMarkup( start_idx, end_idx, MARKUP_TEXTSIZE, size)
+					elseif sel == '#' then
+						validmarkup = true
+						local clr = ParseFormattingColour( sel..attr )
+						textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_COLOR, clr)
+					elseif sel == '!' and attr then
+						validmarkup = true
+						local clr = ParseFormattingColour( attr )
+						local hascolor = attr:find("#")
+						attr = attr:sub(1,hascolor and hascolor-1)
+						textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_LINK, attr, clr )
+					elseif sel == '' then
+						--just suppressing definitions
+					elseif sel ~= nil then
+						print( "Closing unknown text markup code", tostring(sel), debug.traceback(), str )
+					end
+				end
+			elseif sel == "p" then
+				-- p (picture) doesn't need a </> to close the span, it just inserts
+				-- example options:
+				-- <p img=folder/image.tex scale=1.0 rpad=1>
+				local img, scale, color, rotation, rpad = ParseImageInformation( attr )
+				local bind = string.match(attr, [[bind=['’]([^'’]+)]]) -- case sensitive
+				if bind then
+					img = playercontroller and playercontroller:GetTexForControlName(bind)
+					img = img or TheInput:GetTexForControlName(bind)
+					-- If we don't have a bound control, show nothing. Thus it's valid.
+					validmarkup = true
+				end
+				if img then
+					validmarkup = true
+					local start_idx = j - 1
+
+					local pre_segment = str:sub(1, start_idx)
+					local utf8_start_idx = string.utf8len(pre_segment)
+
+					if textnode then
+						--~ print("img:",img)
+						--~ print("scale:",scale)
+						--~ print("color:",color)
+						textnode:AddMarkup( utf8_start_idx, utf8_start_idx, MARKUP_IMAGE, img, scale, rotation, color )
+					end
+
+					-- also insert a '\a' character into the string, so that the bitmap font renderer knows to render an image:
+					-- (insert it AFTER the <blah> tag, so that it remains in the string after the tag is removed
+					str = str:sub( 1, k ) .. '\a' .. rpad .. str:sub( k + 1 )
+				end
+			-- (gibberish) removed "c" sel case cuz it's rarely used (or not used at all anymore)
+			else
+				sel = sel:lower()
+				if (sel == "b") and attr=="" then
+					validmarkup = true
+				elseif (sel == "i") and attr=="" then
+					validmarkup = true
+				elseif (sel == "u") then
+					-- either no colour at all or a valid color
+					if attr == "" or ParseFormattingColour( attr ) then
+						validmarkup = true
+					end
+				elseif (sel == "s") and attr=="" then
+					validmarkup = true
+				elseif (sel == "#") and ParseFormattingColour( sel..attr ) then
+					validmarkup = true
+				elseif (sel == "!") and attr then
+					validmarkup = true
+				elseif (sel == "z") and attr then
+					validmarkup = true
+				end
+
+				if validmarkup then
+					table.insert( spans, j - 1 )
+					table.insert( spans, sel )
+					table.insert( spans, attr )
+				end
+			end
+
+			-- remove the <blah> tag from the string:
+			if validmarkup then
+				str = str:sub( 1, j - 1 ) .. str:sub( k + 1 )
+			else
+				findstartpos = j + 1
+			end
+		end
+	until not j
+
+	return str
+end
+
 function wikiggutil.Wikitext.Link(str, dest)
     if dest then
         return "[["..dest.."|"..str.."]]"
