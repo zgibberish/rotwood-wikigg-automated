@@ -164,6 +164,7 @@ end
 function wikiggutil.Wikitext.PowersTable()
     local Power = require "defs.powers"
     local itemforge = require "defs.itemforge"
+    local lume = require "util.lume"
     
     local File = wikiggutil.Wikitext.File
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
@@ -223,12 +224,19 @@ function wikiggutil.Wikitext.PowersTable()
         out = out.."| "..desc_strings[1].."\n"
 
         local rarities_formatted = rarities
-        -- local rarities_formatted = lume.map(rarities, function(r) return "[["..r.."]]" end)
+        rarities_formatted = lume.map(rarities, function(r)
+            local ret = r
+            ret = string.lower(ret)
+            ret = string.first_to_upper(ret)
+            return ret
+        end)
         local rarities_str = table.concat(rarities_formatted, ", ")
         if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
         out = out.."| "..rarities_str.."\n"
 
         local category = def.power_category or ""
+        category = string.lower(category)
+        category = string.first_to_upper(category)
         -- category = "[["..category.."]]"
         if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
         out = out.."| "..category.."\n"
@@ -958,6 +966,8 @@ function wikiggutil.Wikitext.MasteriesTable()
             out = out.."| "..rewards_string.."\n"
             
             local difficulty = def.difficulty
+            difficulty = string.lower(difficulty)
+            difficulty = string.first_to_upper(difficulty)
             out = out.."| "..difficulty.."\n"
         end
 
