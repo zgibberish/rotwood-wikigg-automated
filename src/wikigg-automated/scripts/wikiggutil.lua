@@ -36,6 +36,7 @@ wikiggutil.Const.ICON_SIZE_SMALL = 24 -- used for stuff like ingredient icons (i
 -- turns every occurrence of "abc" in provided string into a link ( [[]] )
 -- that shows "abc" and links to remap_table["abc"] (override) or just "abc".
 function wikiggutil.Util.str_remap_tolinks(str, remap_table)
+    --TODO (gibberish): this is terrible, please rewrite this later
     local Link = wikiggutil.Wikitext.Link
 
     local ret = ""..str
