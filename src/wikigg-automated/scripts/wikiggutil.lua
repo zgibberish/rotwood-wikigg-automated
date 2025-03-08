@@ -1056,7 +1056,9 @@ function wikiggutil.Wikitext.MasteriesTable()
     -- so text from this generated table WILL NEED MANUAL CLEANUP
     -- before pushing to wiki
 
+    local Mastery = require("defs.mastery.mastery")
     local lume = require "util.lume"
+    local itemforge = require "defs.itemforge"
 
     local File = wikiggutil.Wikitext.File
     local RewardToString = wikiggutil.Wikitext.RewardToString
@@ -1155,7 +1157,8 @@ function wikiggutil.Wikitext.MasteriesTable()
             local name = def.pretty and def.pretty.name or ""
             out = out.."| "..name.."\n"
 
-            local desc = def.pretty and def.pretty.desc or ""
+            local mastery_inst = itemforge.CreateMastery(def)
+            local desc = Mastery.GetDesc(mastery_inst) -- fill in tuning placeholders in desc strings
             desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
             out = out.."| "..desc.."\n"
 
