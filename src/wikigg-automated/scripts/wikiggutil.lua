@@ -1,5 +1,3 @@
---TODO (gibberish) clean up all FileLink/File/Link require and usage code
-
 --[[
     using ingame console:
     imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
@@ -68,7 +66,8 @@ end
 
 function wikiggutil.Wikitext.FileLink(str, dest, filename, size)
     -- file (image) that is a clickable link to a specific destination
-    local link_str = wikiggutil.Wikitext.Link(str, dest)
+    local Link = wikiggutil.Wikitext.Link
+    local link_str = Link(str, dest)
     local size_opt = size and "|"..tostring(size).."px" or ""
     return "[[File:"..filename..size_opt.."|link="..link_str.."]]"
 end
@@ -140,8 +139,8 @@ end
 
 function wikiggutil.Data.GetPowerDefs()
     local Power = require "defs.powers"
-    local lume = require "util.lume"
     local PowerDropManager = require "components.powerdropmanager"
+    local lume = require "util.lume"
 
     local all_defs = Power:GetAllPowers()
     all_defs = PowerDropManager:FilterByDroppable(all_defs)
@@ -181,11 +180,12 @@ function wikiggutil.Wikitext.PowersTable()
         + upload the whole images/ folder to wiki.gg
     ]]
 
-    
     local Power = require "defs.powers"
     local itemforge = require "defs.itemforge"
-    local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
+    
+    local File = wikiggutil.Wikitext.File
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
+    local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
 
     local powers = wikiggutil.Data.GetPowerDefs()
    
@@ -219,7 +219,7 @@ function wikiggutil.Wikitext.PowersTable()
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
         if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
-        out = out.."| "..wikiggutil.Wikitext.File(filename, wikiggutil.Const.ICON_SIZE).."\n"
+        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE).."\n"
 
         local name = def:GetPrettyName()
         local code_name = def.name or ""
@@ -309,6 +309,8 @@ function wikiggutil.Wikitext.GemsTable()
 
     local Power = require "defs.powers" -- read gem effect stats from gem power
     local itemutil = require"util.itemutil"
+
+    local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local str_remap_tolinks = wikiggutil.Util.str_remap_tolinks
@@ -326,7 +328,7 @@ function wikiggutil.Wikitext.GemsTable()
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
-        out = out.."| "..wikiggutil.Wikitext.File(filename, wikiggutil.Const.ICON_SIZE).."\n"
+        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE).."\n"
 
         local name = def.pretty and def.pretty.name or ""
         local code_name = def.name or ""
@@ -419,8 +421,9 @@ function wikiggutil.Wikitext.GemsTable()
 end
 
 function wikiggutil.Wikitext.GemsNavbox()
-    local EquipmentGem = require "defs.equipmentgems.equipmentgem"
     local lume = require "util.lume"
+    local EquipmentGem = require "defs.equipmentgems.equipmentgem"
+
     local Link = wikiggutil.Wikitext.Link
 
     local out = ""
@@ -529,6 +532,8 @@ function wikiggutil.Wikitext.ConstructablesTable()
     local lume = require "util.lume"
     local Constructable = require "defs.constructable"
     local Consumable = require"defs.consumable"
+
+    local File = wikiggutil.Wikitext.File
     local FileLink = wikiggutil.Wikitext.FileLink
 
     -- this is so janky but i managed to make it work, i am so proud of myself now
@@ -601,7 +606,7 @@ function wikiggutil.Wikitext.ConstructablesTable()
             local icon = def.icon or ""
             local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
             local filename = icon_base..".png"
-            out = out.."| "..wikiggutil.Wikitext.File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
+            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
 
             local name = def.pretty and def.pretty.name or ""
             out = out.."| "..name.."\n"
@@ -659,11 +664,6 @@ end
 
 function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
     local Biomes = require "defs.biomes"
-    local Consumable = require"defs.consumable"
-    local Power = require"defs.powers"
-    local Constructable = require"defs.constructable"
-    local Cosmetic = require "defs.cosmetics.cosmetics"
-    local Equipment = require "defs.equipment"
 
     local Link = wikiggutil.Wikitext.Link
     local RewardToString = wikiggutil.Wikitext.RewardToString
@@ -928,8 +928,6 @@ function wikiggutil.Wikitext.MasteriesTable()
     local lume = require "util.lume"
 
     local File = wikiggutil.Wikitext.File
-    local Link = wikiggutil.Wikitext.Link
-    local FileLink = wikiggutil.Wikitext.FileLink
     local RewardToString = wikiggutil.Wikitext.RewardToString
 
     local UpvalueHacker = require("tools.upvaluehacker")
