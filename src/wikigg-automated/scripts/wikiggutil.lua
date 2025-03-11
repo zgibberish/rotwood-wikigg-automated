@@ -30,9 +30,10 @@ wikiggutil.Const.MAP_LINKS = {
     ["Traps"] = true,
     ["Fortifying Ingots"] = true,
 }
-wikiggutil.Const.ICON_SIZE = 128 -- used for stuff like power/gems icons in tables
-wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES = 64
-wikiggutil.Const.ICON_SIZE_SMALL = 24 -- used for stuff like ingredient icons (inline)
+wikiggutil.Const.ICON_SIZE_LARGE = 128 -- used for stuff like power/gems icons in tables
+wikiggutil.Const.ICON_SIZE_MID = 64 -- food, constructables, masteries, etc
+wikiggutil.Const.ICON_SIZE_SMALL = 24 -- used for stuff like ingredient icons
+wikiggutil.Const.ICON_SIZE_SMALLER = 16 -- stuff like keybind icons in strings
 
 -- turns every occurrence of "abc" in provided string into a link ( [[]] )
 -- that shows "abc" and links to remap_table["abc"] (override) or just "abc".
@@ -52,64 +53,58 @@ function wikiggutil.Util.StringRemapLinks(str, remap_table)
     return ret
 end
 
+function wikiggutil.Wikitext.Link(str, dest)
+    if dest then
+        return "[["..dest.."|"..str.."]]"
+    end
+    return "[["..str.."]]"
+end
+
+function wikiggutil.Wikitext.File(filename, size, constrain_height)
+    local size_opt = ""
+    if size then
+        size_opt = "|"
+        if constrain_height then size_opt = size_opt .. "x" end
+        size_opt = size and size_opt..tostring(size).."px"
+    end
+    
+    return "[[File:"..filename..size_opt.."]]"
+end
+
+function wikiggutil.Wikitext.FileLink(str, dest, filename, size)
+    -- file (image) that is a clickable link to a specific destination
+    local Link = wikiggutil.Wikitext.Link
+    local link_str = Link(str, dest)
+    local size_opt = size and "|"..tostring(size).."px" or ""
+    return "[[File:"..filename..size_opt.."|link="..link_str.."]]"
+end
+
 function wikiggutil.Wikitext.FormattedString(str)
-    -- try to convert rotwood text formatting to wikitext text formatting
-    -- (see util.lua ApplyFormatting function)
+    -- only need to convert these tags
+    -- <p>: picture (not paragraph), single tag and does not close
+    -- <#>: colors, does open and close
+    -- can ignore/remove these cuz we dont really need them, and theyre not really used
+    --   <s>: shadow
+    --   <z>: text size
+    --   <!>: link
 
-    local function ParseFormattingColour( attr )
-        local jj, kk, subattr, clrattr = attr:find( "^(.*)#(.+)$" )
-        if clrattr then
-            if clrattr == "0" then
-                -- special case, we don't want this to be expanded to 0fffffff
-                return 0
-            elseif tonumber( clrattr, 16 ) then
-                while #clrattr < 8 do clrattr = clrattr .. "f" end
-                return tonumber( clrattr, 16 )
-            elseif UICOLORS[ clrattr ] then
-                return RGBToHex(UICOLORS[clrattr])
-            end
-        end
+    local File = wikiggutil.Wikitext.File
+
+    --- string util functions
+    -- remove section from start to end index from a string
+    local function str_remove(str, idx_start, idx_end)
+        return str:sub( 1, idx_start - 1 ) .. str:sub(idx_end + 1 )
     end
-    
-    
-    -- Convert a pad width into the padding string.
-    local function EvaluateNbspPad(pad_char_count)
-        if pad_char_count then
-            pad_char_count = math.floor(pad_char_count)
-            local nbsp = "\u{00a0}"
-            return nbsp:rep(pad_char_count)
-        end
-        return ""
-    end
-    
-    -- <p img='images/ui_ftf_shop/displayvalue_up.tex' color=BONUS>
-    -- <p img='images/ui_ftf_shop/displayvalue_up.tex' color=40AB38 scale=1.2 rpad=1>
-    local function ParseImageInformation( attr )
-        local lowerattr = string.lower(attr)
-        local img = string.match(lowerattr, [[img=['’]([^'’]+)]])
-        local scale = string.match(lowerattr, [[scale=([%d.]+)]])
-        local rotation = string.match(lowerattr, [[rotation=(-?[%d.]+)]])
-        local rpad = string.match(lowerattr, [[rpad=([%d.]+)]])
-        rpad = EvaluateNbspPad(rpad)
-        local colortag = string.match(attr, [[color=([(%w_).]+)]])
-        local color = nil
-        if colortag then
-            color = ParseFormattingColour( "#"..colortag )
-        end
-        return img, scale, color, rotation, rpad
-    end
-    
-    local function ParseFontScale( attr )
-        local scale = tonumber(attr)
-        return scale
+    -- insert istr into str at idx
+    local function str_insert_at(str, istr, idx)
+        return str:sub(1, idx-1) .. istr .. str:sub(idx)
     end
 
-    local textnode = nil
-	local can_italic = true
-	local can_bold = true
+
+    local res = ""
 
     -- dummy playercontroller
-	local playercontroller = {
+    local playercontroller = {
         _GetInputTuple = function(self)
             -- (see playercontroller component script)
             return "keyboard", 1
@@ -122,159 +117,90 @@ function wikiggutil.Wikitext.FormattedString(str)
         end
     }
 
-    if textnode then
-        textnode:ClearMarkup()
-    end
+    local j, k, sel, attr
+    local spans = {} -- table that keeps track of openned tags so they can be closed at </>
+    local findstartpos = 1
+    repeat
+        j, k, sel, attr = str:find("<([#!bBcCsSiIuUpPzZ/]?)([^>]*)>", findstartpos)
+        if j then
+            local validmarkup = false
 
-	local j, k, sel, attr
-	local spans = {}
-	local findstartpos = 1
-	repeat
-		-- find colourization.
-		j, k, sel, attr = str:find( "<([#!bBcCsSiIuUpPzZ/]?)([^>]*)>", findstartpos )
-		if j then
-			local validmarkup = false
-			if sel == '/' then
-				-- Close the last span
-				local attr = table.remove( spans )
-				local sel = table.remove( spans )
-				local start_idx = table.remove( spans )
-				local end_idx = j - 1
-				if textnode then
+            if sel == '/' then -- tag close
+                local attr = table.remove(spans)
+				local sel = table.remove(spans)
+				local start_idx = table.remove(spans)
+                
+                if sel == "#" then
+                    str = str_remove(str, j, k)
+                    str = str_insert_at(str, "</font>", j)
+                elseif sel == "s"
+                    or sel == "z"
+                    or sel == "!" then
+                    str = str_remove(str, j, k)
+                end
 
-					local pre_segment = str:sub(1, start_idx)
-					local utf8_start_idx = string.utf8len(pre_segment)
-					local segment = str:sub(1, end_idx)
-					local utf8_end_idx = string.utf8len(segment)
+            elseif sel == "p" then -- picture tag (special cuz it does not close)
+                validmarkup = true
 
-					if sel == "b" then
-						validmarkup = true
-						if can_bold then
-							textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_BOLD )
-						end
-						-- else: language doesn't support bold, but still consume the markup.
-					elseif sel == "i" then
-						validmarkup = true
-						if can_italic then
-							textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_ITALIC )
-						end
-						-- else: language doesn't support italic, but still consume the markup.
-					elseif sel == "u" then
-						validmarkup = true
-						local clr = ParseFormattingColour( attr )
-						textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_UNDERLINE, clr )
-					elseif sel == "s" then
-						validmarkup = true
-						textnode:AddMarkup( start_idx, end_idx, MARKUP_SHADOW )
-					elseif sel == "z" then
-						validmarkup = true
-						local size = ParseFontScale(attr)
-						textnode:AddMarkup( start_idx, end_idx, MARKUP_TEXTSIZE, size)
-					elseif sel == '#' then
-						validmarkup = true
-						local clr = ParseFormattingColour( sel..attr )
-						textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_COLOR, clr)
-					elseif sel == '!' and attr then
-						validmarkup = true
-						local clr = ParseFormattingColour( attr )
-						local hascolor = attr:find("#")
-						attr = attr:sub(1,hascolor and hascolor-1)
-						textnode:AddMarkup( utf8_start_idx, utf8_end_idx, MARKUP_LINK, attr, clr )
-					elseif sel == '' then
-						--just suppressing definitions
-					elseif sel ~= nil then
-						print( "Closing unknown text markup code", tostring(sel), debug.traceback(), str )
-					end
-				end
-			elseif sel == "p" then
-				-- p (picture) doesn't need a </> to close the span, it just inserts
-				-- example options:
-				-- <p img=folder/image.tex scale=1.0 rpad=1>
-				local img, scale, color, rotation, rpad = ParseImageInformation( attr )
-				local bind = string.match(attr, [[bind=['’]([^'’]+)]]) -- case sensitive
-				if bind then
-					img = playercontroller and playercontroller:GetTexForControlName(bind)
-					img = img or TheInput:GetTexForControlName(bind)
-					-- If we don't have a bound control, show nothing. Thus it's valid.
-					validmarkup = true
-				end
-				if img then
-					validmarkup = true
-					local start_idx = j - 1
+                local lowerattr = string.lower(attr)
+                local img = string.match(lowerattr, [[img=['’]([^'’]+)]])
+                local bind = string.match(attr, [[bind=['’]([^'’]+)]]) 
+                local scale = string.match(lowerattr, [[scale=([%d.]+)]]) or 1
+                scale = tonumber(scale)
+                local file_scale = math.ceil(wikiggutil.Const.ICON_SIZE_SMALLER*scale)
 
-					local pre_segment = str:sub(1, start_idx)
-					local utf8_start_idx = string.utf8len(pre_segment)
+                if bind then
+                    img = playercontroller and playercontroller:GetTexForControlName(bind)
+                    img = img or TheInput:GetTexForControlName(bind)
+                    -- If we don't have a bound control, show nothing. Thus it's valid.
+                    validmarkup = true
+                end
+                if img then
+                    str = str_remove(str, j, k)
+                    local _, icon_base = string.match(img, "(.*)%/(.*).tex")
+                    local filename = icon_base..".png"
+                    -- filename prefix to avoid confusing these files with other 
+                    -- simillarly named files, since they tend to be a bit generic
+                    -- also added in extract images script
+                    if bind then filename = "controlicons_"..filename end
+                    str = str_insert_at(str, File(filename, file_scale, (bind~=nil)), j)
+                end
+            else -- tag open for all other types
+                sel = sel:lower()
+                if (sel == "#") then
+                    validmarkup = true
 
-					if textnode then
-						--~ print("img:",img)
-						--~ print("scale:",scale)
-						--~ print("color:",color)
-						textnode:AddMarkup( utf8_start_idx, utf8_start_idx, MARKUP_IMAGE, img, scale, rotation, color )
-					end
+                    -- attr is the hex color code, or a UICOLORS color name
+                    local uicolors_colorcode = rawget(UICOLORS, attr) and HexToStr(RGBToHex(UICOLORS[attr]))
+                    if uicolors_colorcode then
+                        uicolors_colorcode = uicolors_colorcode:sub(1, 6)
+                    end
+                    local colorcode = uicolors_colorcode or attr
+                    local new_tag_str = "<font color=\'#"..colorcode.."\'>"
 
-					-- also insert a '\a' character into the string, so that the bitmap font renderer knows to render an image:
-					-- (insert it AFTER the <blah> tag, so that it remains in the string after the tag is removed
-					str = str:sub( 1, k ) .. '\a' .. rpad .. str:sub( k + 1 )
-				end
-			-- (gibberish) removed "c" sel case cuz it's rarely used (or not used at all anymore)
-			else
-				sel = sel:lower()
-				if (sel == "b") and attr=="" then
-					validmarkup = true
-				elseif (sel == "i") and attr=="" then
-					validmarkup = true
-				elseif (sel == "u") then
-					-- either no colour at all or a valid color
-					if attr == "" or ParseFormattingColour( attr ) then
-						validmarkup = true
-					end
-				elseif (sel == "s") and attr=="" then
-					validmarkup = true
-				elseif (sel == "#") and ParseFormattingColour( sel..attr ) then
-					validmarkup = true
-				elseif (sel == "!") and attr then
-					validmarkup = true
-				elseif (sel == "z") and attr then
-					validmarkup = true
-				end
+                    str = str_remove(str, j, k)
+                    str = str_insert_at(str, new_tag_str, j)
+                elseif sel == "s"
+                    or sel == "z"
+                    or sel == "!" then
+                    validmarkup = true
+                    str = str_remove(str, j, k)
+                end
 
-				if validmarkup then
-					table.insert( spans, j - 1 )
-					table.insert( spans, sel )
-					table.insert( spans, attr )
-				end
-			end
+                if validmarkup then
+                    table.insert(spans, j-1)
+                    table.insert(spans, sel)
+                    table.insert(spans, attr)
+                end
+            end
 
-			-- remove the <blah> tag from the string:
-			if validmarkup then
-				str = str:sub( 1, j - 1 ) .. str:sub( k + 1 )
-			else
-				findstartpos = j + 1
-			end
-		end
-	until not j
+            if not validmarkup then
+                findstartpos = j + 1
+            end
+        end
+    until not j
 
-	return str
-end
-
-function wikiggutil.Wikitext.Link(str, dest)
-    if dest then
-        return "[["..dest.."|"..str.."]]"
-    end
-    return "[["..str.."]]"
-end
-
-function wikiggutil.Wikitext.File(filename, size)
-    local size_opt = size and "|"..tostring(size).."px" or ""
-    return "[[File:"..filename..size_opt.."]]"
-end
-
-function wikiggutil.Wikitext.FileLink(str, dest, filename, size)
-    -- file (image) that is a clickable link to a specific destination
-    local Link = wikiggutil.Wikitext.Link
-    local link_str = Link(str, dest)
-    local size_opt = size and "|"..tostring(size).."px" or ""
-    return "[[File:"..filename..size_opt.."|link="..link_str.."]]"
+    return str
 end
 
 function wikiggutil.Wikitext.RewardToString(reward)
@@ -407,7 +333,7 @@ function wikiggutil.Wikitext.PowersTable()
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
         if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
-        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE).."\n"
+        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_LARGE).."\n"
 
         local name = def:GetPrettyName()
         local code_name = def.name or ""
@@ -505,7 +431,7 @@ function wikiggutil.Wikitext.GemsTable()
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
-        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE).."\n"
+        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_LARGE).."\n"
 
         local name = def.pretty and def.pretty.name or ""
         local code_name = def.name or ""
@@ -763,7 +689,7 @@ function wikiggutil.Wikitext.ConstructablesTable()
             local icon = def.icon or ""
             local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
             local filename = icon_base..".png"
-            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
+            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_MID).."\n"
 
             local name = def.pretty and def.pretty.name or ""
             out = out.."| "..name.."\n"
@@ -932,7 +858,7 @@ function wikiggutil.Wikitext.FoodTable()
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
-        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
+        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_MID).."\n"
 
         local name = def.pretty and def.pretty.name or ""
         out = out.."| "..name.."\n"
@@ -1062,6 +988,7 @@ function wikiggutil.Wikitext.MasteriesTable()
 
     local File = wikiggutil.Wikitext.File
     local RewardToString = wikiggutil.Wikitext.RewardToString
+    local FormattedString = wikiggutil.Wikitext.FormattedString
 
     local UpvalueHacker = require "tools.upvaluehacker"
     local MasteryScreenMulti = require "screens.town.masteryscreenmulti"
@@ -1152,14 +1079,15 @@ function wikiggutil.Wikitext.MasteriesTable()
             local icon = def.icon or ""
             local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
             local filename = icon_base..".png"
-            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_CONSTRUCTABLES).."\n"
+            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_MID).."\n"
 
             local name = def.pretty and def.pretty.name or ""
+            name = FormattedString(name)
             out = out.."| "..name.."\n"
 
             local mastery_inst = itemforge.CreateMastery(def)
             local desc = Mastery.GetDesc(mastery_inst) -- fill in tuning placeholders in desc strings
-            desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
+            desc = FormattedString(desc)
             out = out.."| "..desc.."\n"
 
             local max_progress = def.max_progress
