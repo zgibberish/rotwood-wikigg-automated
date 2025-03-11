@@ -17,48 +17,110 @@ wikiggutil.Wikitext = {}
 
 -- map specific words to specific pages
 -- you can map different strings to the same page link
+-- order matters, case sensitive
 wikiggutil.Const.MAP_LINKS = {
-    -- (match : destination override)
-    -- (matches are case sensitive)
-    ["Focus"] = "Focus Hits",
-    ["Critical"] = "Critical Hits",
-    ["Runspeed"] = true,
-    ["Teffra"] = true,
-    ["Shield"] = true,
-    ["Perfect Dodge"] = true,
-    ["Quick Rise"] = true,
-    ["Traps"] = true,
-    ["Fortifying Ingots"] = true,
+    -- notice that "Focus Hits" is mapped before "Focus")
+    {match = "Focus Hits"},
+    {match = "Focus Hit", dest = "Focus Hits"},
+    {match = "Focus", dest = "Focus Hits"},
 
-    ["Mother Treek"] = true,
-    ["Owlitzer"] = true,
-    ["Enigmox"] = true,
-    ["Swarm"] = true,
-    ["Rook"] = true,
-    ["Shell Drake"] = true,
-    ["Grimhollow"] = true,
+    {match = "Critical Hits"},
+    {match = "Critical Hit Chance", dest = "Critical Hits"},
+    {match = "Critical Hit", dest = "Critical Hits"},
+    {match = "Critical", dest = "Critical Hits"},
+
+    {match = "Powers"},
+    {match = "Runspeed"},
+    {match = "Teffra"},
+    {match = "Shield"},
+    {match = "Perfect Dodg"},
+    {match = "Quick Ris"},
+    {match = "Traps"},
+    {match = "Fortifying Ingot"},
+
+    {match = "Mother Treek"},
+    {match = "Owlitzer"},
+    {match = "Enigmox"},
+    {match = "Swarm"},
+    {match = "Rook"},
+    {match = "Shell Drake"},
+    {match = "Grimhollow"},
 }
 wikiggutil.Const.ICON_SIZE_LARGE = 128 -- used for stuff like power/gems icons in tables
 wikiggutil.Const.ICON_SIZE_MID = 64 -- food, constructables, masteries, etc
 wikiggutil.Const.ICON_SIZE_SMALL = 24 -- used for stuff like ingredient icons
 wikiggutil.Const.ICON_SIZE_SMALLER = 16 -- stuff like keybind icons in strings
 
+--- string util functions
+-- remove section from start to end index from a string
+function wikiggutil.Util.StrRemove(str, idx_start, idx_end)
+    return str:sub( 1, idx_start - 1 ) .. str:sub(idx_end + 1 )
+end    
+-- insert istr into str at idx
+function wikiggutil.Util.StrInsertAt(str, istr, idx)
+    return str:sub(1, idx-1) .. istr .. str:sub(idx)
+end
+
 -- turns every occurrence of "abc" in provided string into a link ( [[]] )
 -- that shows "abc" and links to remap_table["abc"] (override) or just "abc".
-function wikiggutil.Util.StringRemapLinks(str, remap_table)
-    --TODO (gibberish): this is terrible, please rewrite this later
+function wikiggutil.Util.StrRemapLinks(str, remap_table)
+    local lume = require "util.lume"
+
+    local StrRemove = wikiggutil.Util.StrRemove
+    local StrInsertAt = wikiggutil.Util.StrInsertAt
     local Link = wikiggutil.Wikitext.Link
 
-    local ret = ""..str
+    local operations = {
+        -- idx_start
+        -- idx_end
+        -- replace_str
+    }
 
-    for match, dest in pairs(remap_table) do
-        local replace = (type(dest) == "string")
-            and Link(match, dest)
-            or Link(match)
-        ret = string.gsub(ret, match, replace)
+    local function idx_already_has_operation(idx)
+        -- checks if there's already replaced strings waiting to be applied
+        -- at the specified index
+        for _,o in ipairs(operations) do
+            if idx >= o.idx_start and idx <= o.idx_end then return true end
+        end
+        return false
     end
 
-    return ret
+    for _, entry in ipairs(remap_table) do
+        local match, dest = entry.match, entry.dest
+        local replace = dest
+            and Link(match, dest)
+            or Link(match)
+
+        local findstartpos = 1
+        local i, j
+        repeat
+            i, j = str:find(match, findstartpos)
+            if i then
+                if not idx_already_has_operation(i) then
+                    table.insert(operations, {
+                        idx_start = i,
+                        idx_end = j,
+                        replace_str = replace,
+                    })
+                end
+                findstartpos = j + 1
+            end
+        until not i
+    end
+
+    -- important!! we have to operate from start to end of string
+    operations = lume.sort(operations, function(a, b) return a.idx_start < b.idx_start end)
+
+    -- apply all replace operations
+    local offset = 0
+    for _,o in ipairs(operations) do
+        str = StrRemove(str, o.idx_start + offset, o.idx_end + offset)
+        str = StrInsertAt(str, o.replace_str, o.idx_start + offset)
+        local len_original = o.idx_end - o.idx_start + 1
+        offset = offset + (o.replace_str:len() - len_original)
+    end
+
+    return str
 end
 
 function wikiggutil.Wikitext.Link(str, dest)
@@ -96,18 +158,9 @@ function wikiggutil.Wikitext.FormattedString(str)
     --   <z>: text size
     --   <!>: link
 
+    local StrRemove = wikiggutil.Util.StrRemove
+    local StrInsertAt = wikiggutil.Util.StrInsertAt
     local File = wikiggutil.Wikitext.File
-
-    --- string util functions
-    -- remove section from start to end index from a string
-    local function str_remove(str, idx_start, idx_end)
-        return str:sub( 1, idx_start - 1 ) .. str:sub(idx_end + 1 )
-    end
-    -- insert istr into str at idx
-    local function str_insert_at(str, istr, idx)
-        return str:sub(1, idx-1) .. istr .. str:sub(idx)
-    end
-
 
     local res = ""
 
@@ -139,12 +192,12 @@ function wikiggutil.Wikitext.FormattedString(str)
 				local start_idx = table.remove(spans)
                 
                 if sel == "#" then
-                    str = str_remove(str, j, k)
-                    str = str_insert_at(str, "</font>", j)
+                    str = StrRemove(str, j, k)
+                    str = StrInsertAt(str, "</font>", j)
                 elseif sel == "s"
                     or sel == "z"
                     or sel == "!" then
-                    str = str_remove(str, j, k)
+                    str = StrRemove(str, j, k)
                 end
 
             elseif sel == "p" then -- picture tag (special cuz it does not close)
@@ -164,14 +217,14 @@ function wikiggutil.Wikitext.FormattedString(str)
                     validmarkup = true
                 end
                 if img then
-                    str = str_remove(str, j, k)
+                    str = StrRemove(str, j, k)
                     local _, icon_base = string.match(img, "(.*)%/(.*).tex")
                     local filename = icon_base..".png"
                     -- filename prefix to avoid confusing these files with other 
                     -- simillarly named files, since they tend to be a bit generic
                     -- also added in extract images script
                     if bind then filename = "controlicons_"..filename end
-                    str = str_insert_at(str, File(filename, file_scale, (bind~=nil)), j)
+                    str = StrInsertAt(str, File(filename, file_scale, (bind~=nil)), j)
                 end
             else -- tag open for all other types
                 sel = sel:lower()
@@ -186,13 +239,13 @@ function wikiggutil.Wikitext.FormattedString(str)
                     local colorcode = uicolors_colorcode or attr
                     local new_tag_str = "<font color=\'#"..colorcode.."\'>"
 
-                    str = str_remove(str, j, k)
-                    str = str_insert_at(str, new_tag_str, j)
+                    str = StrRemove(str, j, k)
+                    str = StrInsertAt(str, new_tag_str, j)
                 elseif sel == "s"
                     or sel == "z"
                     or sel == "!" then
                     validmarkup = true
-                    str = str_remove(str, j, k)
+                    str = StrRemove(str, j, k)
                 end
 
                 if validmarkup then
@@ -307,7 +360,7 @@ function wikiggutil.Wikitext.PowersTable()
     
     local File = wikiggutil.Wikitext.File
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
-    local StringRemapLinks = wikiggutil.Util.StringRemapLinks
+    local StrRemapLinks = wikiggutil.Util.StrRemapLinks
 
     local powers = wikiggutil.Data.GetPowerDefs()
    
@@ -356,7 +409,7 @@ function wikiggutil.Wikitext.PowersTable()
             desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
 
             -- make specific words links to their own page
-            desc = StringRemapLinks(desc, MAP_LINKS)
+            desc = StrRemapLinks(desc, MAP_LINKS)
 
             table.insert(desc_strings, desc)
         end
@@ -424,7 +477,7 @@ function wikiggutil.Wikitext.GemsTable()
     local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
-    local StringRemapLinks = wikiggutil.Util.StringRemapLinks
+    local StrRemapLinks = wikiggutil.Util.StrRemapLinks
 
     local gems = wikiggutil.Data.GetGemDefs()
 
@@ -449,7 +502,7 @@ function wikiggutil.Wikitext.GemsTable()
         local desc = def.pretty and def.pretty.slotted_desc or ""
         desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
         -- make specific words links to their own page
-        desc = StringRemapLinks(desc, MAP_LINKS)
+        desc = StrRemapLinks(desc, MAP_LINKS)
         out = out.."| "..desc.."\n"
 
         local stat_str = {}
@@ -996,7 +1049,7 @@ function wikiggutil.Wikitext.MasteriesTable()
 
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local File = wikiggutil.Wikitext.File
-    local StringRemapLinks = wikiggutil.Util.StringRemapLinks
+    local StrRemapLinks = wikiggutil.Util.StrRemapLinks
     local FormattedString = wikiggutil.Wikitext.FormattedString
     local RewardToString = wikiggutil.Wikitext.RewardToString
 
@@ -1092,13 +1145,12 @@ function wikiggutil.Wikitext.MasteriesTable()
             out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_MID).."\n"
 
             local name = def.pretty and def.pretty.name or ""
-            name = StringRemapLinks(name, MAP_LINKS)
             name = FormattedString(name)
             out = out.."| "..name.."\n"
 
             local mastery_inst = itemforge.CreateMastery(def)
             local desc = Mastery.GetDesc(mastery_inst) -- fill in tuning placeholders in desc strings
-            desc = StringRemapLinks(desc, MAP_LINKS)
+            desc = StrRemapLinks(desc, MAP_LINKS)
             desc = FormattedString(desc)
             out = out.."| "..desc.."\n"
 
