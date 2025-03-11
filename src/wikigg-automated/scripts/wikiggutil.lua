@@ -29,6 +29,14 @@ wikiggutil.Const.MAP_LINKS = {
     ["Quick Rise"] = true,
     ["Traps"] = true,
     ["Fortifying Ingots"] = true,
+    
+    ["Mother Treek"] = true,
+    ["Owlitzer"] = true,
+    ["Enigmox"] = true,
+    ["Swarm"] = true,
+    ["Rook"] = true,
+    ["Shell Drake"] = true,
+    ["Grimhollow"] = true,
 }
 wikiggutil.Const.ICON_SIZE_LARGE = 128 -- used for stuff like power/gems icons in tables
 wikiggutil.Const.ICON_SIZE_MID = 64 -- food, constructables, masteries, etc
