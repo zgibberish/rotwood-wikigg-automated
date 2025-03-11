@@ -29,7 +29,7 @@ wikiggutil.Const.MAP_LINKS = {
     ["Quick Rise"] = true,
     ["Traps"] = true,
     ["Fortifying Ingots"] = true,
-    
+
     ["Mother Treek"] = true,
     ["Owlitzer"] = true,
     ["Enigmox"] = true,
@@ -994,9 +994,11 @@ function wikiggutil.Wikitext.MasteriesTable()
     local lume = require "util.lume"
     local itemforge = require "defs.itemforge"
 
+    local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local File = wikiggutil.Wikitext.File
-    local RewardToString = wikiggutil.Wikitext.RewardToString
+    local StringRemapLinks = wikiggutil.Util.StringRemapLinks
     local FormattedString = wikiggutil.Wikitext.FormattedString
+    local RewardToString = wikiggutil.Wikitext.RewardToString
 
     local UpvalueHacker = require "tools.upvaluehacker"
     local MasteryScreenMulti = require "screens.town.masteryscreenmulti"
@@ -1090,11 +1092,13 @@ function wikiggutil.Wikitext.MasteriesTable()
             out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_MID).."\n"
 
             local name = def.pretty and def.pretty.name or ""
+            name = StringRemapLinks(name, MAP_LINKS)
             name = FormattedString(name)
             out = out.."| "..name.."\n"
 
             local mastery_inst = itemforge.CreateMastery(def)
             local desc = Mastery.GetDesc(mastery_inst) -- fill in tuning placeholders in desc strings
+            desc = StringRemapLinks(desc, MAP_LINKS)
             desc = FormattedString(desc)
             out = out.."| "..desc.."\n"
 
