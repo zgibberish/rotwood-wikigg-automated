@@ -361,6 +361,7 @@ function wikiggutil.Wikitext.PowersTable()
     local File = wikiggutil.Wikitext.File
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local StrRemapLinks = wikiggutil.Util.StrRemapLinks
+    local FormattedString = wikiggutil.Wikitext.FormattedString
 
     local powers = wikiggutil.Data.GetPowerDefs()
    
@@ -406,10 +407,9 @@ function wikiggutil.Wikitext.PowersTable()
         for _,rarity in ipairs(rarities) do
             local pwr = itemforge.CreatePower(def, rarity)
             local desc = Power.GetDescForPower(pwr)
-            desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
 
-            -- make specific words links to their own page
             desc = StrRemapLinks(desc, MAP_LINKS)
+            desc = FormattedString(desc)
 
             table.insert(desc_strings, desc)
         end
@@ -478,6 +478,7 @@ function wikiggutil.Wikitext.GemsTable()
     local Link = wikiggutil.Wikitext.Link
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local StrRemapLinks = wikiggutil.Util.StrRemapLinks
+    local FormattedString = wikiggutil.Wikitext.FormattedString
 
     local gems = wikiggutil.Data.GetGemDefs()
 
@@ -503,6 +504,7 @@ function wikiggutil.Wikitext.GemsTable()
         desc = desc:gsub("%b<>", "") -- strip out <> formatting (see kstring.lua)
         -- make specific words links to their own page
         desc = StrRemapLinks(desc, MAP_LINKS)
+        desc = FormattedString(desc)
         out = out.."| "..desc.."\n"
 
         local stat_str = {}
@@ -902,9 +904,13 @@ end
 function wikiggutil.Wikitext.FoodTable()
     local Consumable = require "defs.consumable"
     local Power = require "defs.powers"
+
+    local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
     local FileLink = wikiggutil.Wikitext.FileLink
+    local StrRemapLinks = wikiggutil.Util.StrRemapLinks
+    local FormattedString = wikiggutil.Wikitext.FormattedString
 
     local all_defs = wikiggutil.Data.GetFoodDefs()
 
@@ -925,6 +931,8 @@ function wikiggutil.Wikitext.FoodTable()
         out = out.."| "..name.."\n"
         
         local desc = def.pretty and def.pretty.desc or ""
+        desc = StrRemapLinks(desc, MAP_LINKS)
+        desc = FormattedString(desc)
         out = out.."| "..desc.."\n"
 
         local power_def = Power.FindPowerByName(def.power)
@@ -1039,10 +1047,6 @@ function wikiggutil.Data.GetMasteries(mastery_type)
 end
 
 function wikiggutil.Wikitext.MasteriesTable()
-    --NOTE (PLEASE READ): mastery strings has many special elements
-    -- so text from this generated table WILL NEED MANUAL CLEANUP
-    -- before pushing to wiki
-
     local Mastery = require "defs.mastery.mastery"
     local lume = require "util.lume"
     local itemforge = require "defs.itemforge"
@@ -1121,9 +1125,6 @@ function wikiggutil.Wikitext.MasteriesTable()
         all_tab_items[tab.category] = defs
     end
 
-    -- d_view(tab_keys_ordered)
-    -- d_view(all_tab_items)
-    
     local out = ""
     out = out.."{| class=\"wikitable sortable\"\n" -- table start
     out = out.."|-\n"
