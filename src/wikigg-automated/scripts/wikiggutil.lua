@@ -295,12 +295,12 @@ function wikiggutil.Wikitext.RewardToString(reward)
         local icon = ""
         local name = def.name
         if slot == Cosmetic.Slots.PLAYER_TITLE then
-            icon = "cosmetic_icon_"..slot..".png"
+            icon = "character_title.png" -- from icons_ftf
             name = STRINGS.COSMETICS.TITLES[string.upper(def.title_key)]
         elseif slot == Cosmetic.Slots.PLAYER_BODYPART then
-            icon = "cosmetic_icon_"..slot..".png"
+            icon = "character_body.png" -- from icons_ftf
         else
-            icon = "cosmetic_icon_generic.png"
+            icon = "inventory_wrap.png" -- from icons_ftf
         end
 
         return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
