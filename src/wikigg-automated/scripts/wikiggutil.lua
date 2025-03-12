@@ -26,6 +26,7 @@ wikiggutil.Const.MAP_LINKS = {
 
     {match = "Critical Hits"},
     {match = "Critical Hit Chance", dest = "Critical Hits"},
+    {match = "Critical Chance", dest = "Critical Hits"},
     {match = "Critical Hit", dest = "Critical Hits"},
     {match = "Critical", dest = "Critical Hits"},
 
@@ -33,8 +34,8 @@ wikiggutil.Const.MAP_LINKS = {
     {match = "Runspeed"},
     {match = "Teffra"},
     {match = "Shield"},
-    {match = "Perfect Dodg"},
-    {match = "Quick Ris"},
+    {match = "Perfect Dodge"},
+    {match = "Quick Rise"},
     {match = "Traps"},
     {match = "Fortifying Ingot"},
 
@@ -369,7 +370,7 @@ function wikiggutil.Wikitext.PowersTable()
     -- table start
     out = out.."{| class=\"wikitable sortable mw-collapsible\" style=\"width: 95%\"\n"
     out = out.."|-\n"
-    out = out.."! style=\"width: 148px\" | Icon "
+    out = out.."! style=\"width: 144px\" | Icon "
     out = out.."!! style=\"width: 20%\" | Name "
     out = out.."!! Description "
     out = out.."!! style=\"width: 10%\" | Tiers (Rarities) "
