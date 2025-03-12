@@ -383,8 +383,8 @@ function wikiggutil.Wikitext.PowersTable()
     out = out.."! Description\n"
     out = out.."! Tiers (Rarities)\n"
     out = out.."! Category\n"
-    out = out.."! Type\n"
     out = out.."! Slot\n"
+    out = out.."! Type\n"
     out = out.."\n"
 
     for _,def in ipairs(powers) do
@@ -460,17 +460,6 @@ function wikiggutil.Wikitext.PowersTable()
         out = out.."style=\"text-align:center;\" "
         out = out.."| "..category.."\n"
         
-        local power_type = def.power_type or ""
-        power_type = STRINGS.POWERS.POWER_TYPE[power_type]
-        --TODO (gibberish) this does not very readable and pretty, can we improve this?
-        if #rarities > 1 then
-            out = out.."| rowspan="..tostring(#rarities).." "
-        else
-            out = out.."| "
-        end
-        out = out.."style=\"text-align:center;\" "
-        out = out.."| "..power_type.."\n"
-
         local slot = def.slot or ""
         slot = string.lower(slot)
         slot = string.first_to_upper(slot)
@@ -482,6 +471,17 @@ function wikiggutil.Wikitext.PowersTable()
         end
         out = out.."style=\"text-align:center;\" "
         out = out.."| "..slot.."\n"
+
+        local power_type = def.power_type or ""
+        power_type = STRINGS.POWERS.POWER_TYPE[power_type]
+        --TODO (gibberish) this does not very readable and pretty, can we improve this?
+        if #rarities > 1 then
+            out = out.."| rowspan="..tostring(#rarities).." "
+        else
+            out = out.."| "
+        end
+        out = out.."style=\"text-align:center;\" "
+        out = out.."| "..power_type.."\n"
 
         if #desc_strings > 1 then
             for i=2,#desc_strings do
