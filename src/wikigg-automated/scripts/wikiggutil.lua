@@ -367,15 +367,14 @@ function wikiggutil.Wikitext.PowersTable()
     local powers = wikiggutil.Data.GetPowerDefs()
    
     local out = ""
-    -- table start
-    out = out.."{| class=\"wikitable sortable mw-collapsible\" style=\"width: 95%\"\n"
+    out = out.."{| class=\"wikitable sortable mw-collapsible\" style=\"width: 95%\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! style=\"width: 144px\" | Icon "
-    out = out.."!! style=\"width: 20%\" | Name "
-    out = out.."!! Description "
-    out = out.."!! style=\"width: 10%\" | Tiers (Rarities) "
-    out = out.."!! style=\"width: 8%\" | Category "
-    out = out.."\n\n"
+    out = out.."! style=\"width: 144px\" | Icon\n"
+    out = out.."! style=\"width: 20%\" | Name\n"
+    out = out.."! Description\n"
+    out = out.."! style=\"width: 10%\" | Tiers (Rarities)\n"
+    out = out.."! style=\"width: 8%\" | Category\n"
+    out = out.."\n"
 
     for _,def in ipairs(powers) do
         -- get all rarities of power in ascending order
@@ -425,13 +424,19 @@ function wikiggutil.Wikitext.PowersTable()
         end)
         local rarities_str = table.concat(rarities_formatted, ", ")
         if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
+        -- (unlike category, this is kept left aligned !!!)
         out = out.."| "..rarities_str.."\n"
 
         local category = def.power_category or ""
         category = string.lower(category)
         category = string.first_to_upper(category)
-        -- category = "[["..category.."]]"
-        if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
+        --TODO (gibberish) this does not very readable and pretty, can we improve this?
+        if #rarities > 1 then
+            out = out.."| rowspan="..tostring(#rarities).." "
+        else
+            out = out.."| "
+        end
+        out = out.."style=\"text-align:center;\" "
         out = out.."| "..category.."\n"
         
         if #desc_strings > 1 then
@@ -484,9 +489,17 @@ function wikiggutil.Wikitext.GemsTable()
     local gems = wikiggutil.Data.GetGemDefs()
 
     local out = ""
-    out = out.."{| class=\"wikitable\"\n" -- table start
+    out = out.."{| class=\"wikitable mw-collapsible sortable\" style=\"width: 95%\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! Icon !! Name !! Description !! α !! β !! γ !! Slot Match Bonus !! Type\n\n"
+    out = out.."! style=\"width: 144px\" | Icon\n"
+    out = out.."! style=\"width: 20%\" | Name\n"
+    out = out.."! style=\"width: 40%\" | Description\n"
+    out = out.."! style=\"width: 5%\" | α\n"
+    out = out.."! style=\"width: 5%\" | β\n"
+    out = out.."! style=\"width: 5%\" | γ\n"
+    out = out.."! Slot Match Bonus\n"
+    out = out.."! style=\"width: 5%\" | Type\n"
+    out = out.."\n"
 
     for _,def in ipairs(gems) do
         out = out.."|-\n" 
@@ -567,16 +580,18 @@ function wikiggutil.Wikitext.GemsTable()
             end
         end
         
+        out = out.."| style=\"text-align:center;\" "
         out = out.."| "..(stat_str[1] or "").."\n"
+        out = out.."| style=\"text-align:center;\" "
         out = out.."| "..(stat_str[2] or "").."\n"
+        out = out.."| style=\"text-align:center;\" "
         out = out.."| "..(stat_str[3] or "").."\n"
+        out = out.."| style=\"text-align:center;\" "
         out = out.."| "..(stat_str_bonus or "").."\n"
 
         local gem_type = def.gem_type or ""
         local gem_type_pretty = STRINGS.GEMS.SLOT_TYPE[gem_type] or ""
-        -- (gibberish)
-        --TODO: make the gem type a link to specific pages about them?
-        -- (make_link())
+        out = out.."| style=\"text-align:center;\" "
         out = out.."| "..gem_type_pretty.."\n"
 
         out = out.."\n"
@@ -916,9 +931,17 @@ function wikiggutil.Wikitext.FoodTable()
     local all_defs = wikiggutil.Data.GetFoodDefs()
 
     local out = ""
-    out = out.."{| class=\"wikitable sortable\"\n" -- table start
+    out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! Icon !! Name !! Description !! Power !! Ingredients !! Purchasable period (days) || Stock available || Restock cooldown (days)\n\n"
+    out = out.."! Icon\n"
+    out = out.."! Name\n"
+    out = out.."! Description\n"
+    out = out.."! Power\n"
+    out = out.."! Ingredients\n"
+    out = out.."! Purchasable period (days)\n"
+    out = out.."! Stock available\n"
+    out = out.."! Restock cooldown (days)\n"
+    out = out.."\n"
 
     for _,def in ipairs(all_defs) do
         out = out.."|-\n" -- row
@@ -1127,9 +1150,15 @@ function wikiggutil.Wikitext.MasteriesTable()
     end
 
     local out = ""
-    out = out.."{| class=\"wikitable sortable\"\n" -- table start
+    out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! Icon !! Name !! Description !! Max Progress !! Rewards !! Difficulty\n\n"
+    out = out.."! Icon\n"
+    out = out.."! Name\n"
+    out = out.."! Description\n"
+    out = out.."! Max Progress\n"
+    out = out.."! Rewards\n"
+    out = out.."! Difficulty\n"
+    out = out.."\n"
 
     for _,tab_key in ipairs(tab_keys_ordered) do
         local tab_items = all_tab_items[tab_key]
@@ -1157,6 +1186,7 @@ function wikiggutil.Wikitext.MasteriesTable()
             out = out.."| "..desc.."\n"
 
             local max_progress = def.max_progress
+            out = out.."| style=\"text-align:center;\" "
             out = out.."| "..tostring(max_progress).."\n"
 
             local reward_strings = {}
@@ -1170,6 +1200,7 @@ function wikiggutil.Wikitext.MasteriesTable()
             local difficulty = def.difficulty
             difficulty = string.lower(difficulty)
             difficulty = string.first_to_upper(difficulty)
+            out = out.."| style=\"text-align:center;\" "
             out = out.."| "..difficulty.."\n"
         end
 
