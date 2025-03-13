@@ -1,5 +1,4 @@
---[[
-    using ingame console:
+--[[ using ingame console:
     imgui:SetClipboardText(wikiggutil.Wikitext.PowersTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.GemsNavbox())
@@ -7,6 +6,7 @@
     imgui:SetClipboardText(wikiggutil.Wikitext.BiomeExplorationRewardsTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.FoodTable())
     imgui:SetClipboardText(wikiggutil.Wikitext.MasteriesTable())
+    imgui:SetClipboardText(wikiggutil.Wikitext.AnomaliesTable())
 ]]
 
 local wikiggutil = {}
@@ -124,6 +124,8 @@ function wikiggutil.Util.StrRemapLinks(str, remap_table)
     return str
 end
 
+-- usually i would only use this when there are a lot of attributes
+-- or repetitive code
 function wikiggutil.Wikitext.AttributesToString(attr_table)
     local attr_table = attr_table or {}
     local formatted_attributes = {}
@@ -156,9 +158,8 @@ end
 function wikiggutil.Wikitext.FileLink(str, dest, filename, size)
     -- file (image) that is a clickable link to a specific destination
     local Link = wikiggutil.Wikitext.Link
-    local link_str = Link(str, dest)
     local size_opt = size and "|"..tostring(size).."px" or ""
-    return "[[File:"..filename..size_opt.."|link="..link_str.."]]"
+    return "[[File:"..filename..size_opt.."|link="..Link(str, dest).."]]"
 end
 
 function wikiggutil.Wikitext.FormattedString(str)
@@ -370,6 +371,7 @@ function wikiggutil.Wikitext.PowersTable()
     local itemforge = require "defs.itemforge"
     local lume = require "util.lume"
     
+    local Attr = wikiggutil.Wikitext.AttributesToString
     local File = wikiggutil.Wikitext.File
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local StrRemapLinks = wikiggutil.Util.StrRemapLinks
@@ -377,21 +379,12 @@ function wikiggutil.Wikitext.PowersTable()
 
     local powers = wikiggutil.Data.GetPowerDefs()
    
-    -- local out = ""
-    -- out = out.."{| class=\"wikitable sortable mw-collapsible\" style=\"width: 95%\"\n" -- table start
-    -- out = out.."|-\n"
-    -- out = out.."! style=\"width: 144px\" | Icon\n"
-    -- out = out.."! style=\"width: 20%\" | Name\n"
-    -- out = out.."! Description\n"
-    -- out = out.."! style=\"width: 10%\" | Tiers (Rarities)\n"
-    -- out = out.."! style=\"width: 8%\" | Category\n"
-    -- out = out.."\n"
     local out = ""
     out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! Icon\n"
+    out = out.."! class=\"unsortable\" | Icon\n"
     out = out.."! Name\n"
-    out = out.."! Description\n"
+    out = out.."! style=\"min-width:280px;\" class=\"unsortable\" | Description\n"
     out = out.."! Tiers (Rarities)\n"
     out = out.."! Category\n"
     out = out.."! Slot\n"
@@ -407,6 +400,8 @@ function wikiggutil.Wikitext.PowersTable()
             end
         end
         
+        local rowspan_amount = (#rarities > 1) and #rarities or nil
+
         out = out.."|-\n"
 
         -- turns this
@@ -416,18 +411,12 @@ function wikiggutil.Wikitext.PowersTable()
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
-        if #rarities > 1 then out = out.."| rowspan="..tostring(#rarities).." " end
+        if rowspan_amount then out = out.."| "..Attr({rowspan=rowspan_amount}).." " end
         out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_LARGE).."\n"
 
         local name = def:GetPrettyName()
         local code_name = def.name or ""
-        --TODO (gibberish) this does not very readable and pretty, can we improve this?
-        if #rarities > 1 then
-            out = out.."| rowspan="..tostring(#rarities).." "
-        else
-            out = out.."| "
-        end
-        out = out.."style=\"text-align:center;\" "
+        out = out.."| "..Attr({rowspan=rowspan_amount, style="text-align:center;"}).." "
         out = out.."| "..name.."<br><code>"..code_name.."</code>\n"
 
         -- multiple descriptions for multiple rarities
@@ -450,48 +439,24 @@ function wikiggutil.Wikitext.PowersTable()
             or string.first_to_upper(string.lower(ret))
         end)
         local rarities_str = table.concat(rarities_formatted, "<br>")
-        --TODO (gibberish) this does not very readable and pretty, can we improve this?
-        if #rarities > 1 then
-            out = out.."| rowspan="..tostring(#rarities).." "
-        else
-            out = out.."| "
-        end
-        out = out.."style=\"text-align:center;\" "
+        out = out.."| "..Attr({rowspan=rowspan_amount, style="text-align:center;"}).." "
         out = out.."| "..rarities_str.."\n"
 
         local category = def.power_category or ""
         category = string.lower(category)
         category = string.first_to_upper(category)
-        --TODO (gibberish) this does not very readable and pretty, can we improve this?
-        if #rarities > 1 then
-            out = out.."| rowspan="..tostring(#rarities).." "
-        else
-            out = out.."| "
-        end
-        out = out.."style=\"text-align:center;\" "
+        out = out.."| "..Attr({rowspan=rowspan_amount, style="text-align:center;"}).." "
         out = out.."| "..category.."\n"
         
         local slot = def.slot or ""
         slot = string.lower(slot)
         slot = string.first_to_upper(slot)
-        --TODO (gibberish) this does not very readable and pretty, can we improve this?
-        if #rarities > 1 then
-            out = out.."| rowspan="..tostring(#rarities).." "
-        else
-            out = out.."| "
-        end
-        out = out.."style=\"text-align:center;\" "
+        out = out.."| "..Attr({rowspan=rowspan_amount, style="text-align:center;"}).." "
         out = out.."| "..slot.."\n"
 
         local power_type = def.power_type or ""
         power_type = STRINGS.POWERS.POWER_TYPE[power_type]
-        --TODO (gibberish) this does not very readable and pretty, can we improve this?
-        if #rarities > 1 then
-            out = out.."| rowspan="..tostring(#rarities).." "
-        else
-            out = out.."| "
-        end
-        out = out.."style=\"text-align:center;\" "
+        out = out.."| "..Attr({rowspan=rowspan_amount, style="text-align:center;"}).." "
         out = out.."| "..power_type.."\n"
 
         if #desc_strings > 1 then
@@ -540,20 +505,21 @@ function wikiggutil.Wikitext.GemsTable()
     local MAP_LINKS = wikiggutil.Const.MAP_LINKS
     local StrRemapLinks = wikiggutil.Util.StrRemapLinks
     local FormattedString = wikiggutil.Wikitext.FormattedString
+    local cell_center = "style=\"text-align:center;\""
 
     local gems = wikiggutil.Data.GetGemDefs()
 
     local out = ""
-    out = out.."{| class=\"wikitable mw-collapsible sortable\" style=\"width: 95%\"\n" -- table start
+    out = out.."{| class=\"wikitable mw-collapsible sortable\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! style=\"width: 144px\" | Icon\n"
-    out = out.."! style=\"width: 20%\" | Name\n"
-    out = out.."! style=\"width: 40%\" | Description\n"
-    out = out.."! style=\"width: 5%\" | α\n"
-    out = out.."! style=\"width: 5%\" | β\n"
-    out = out.."! style=\"width: 5%\" | γ\n"
+    out = out.."! class=\"unsortable\" | Icon\n"
+    out = out.."! Name\n"
+    out = out.."! style=\"min-width:280px;\" class=\"unsortable\" | Description\n"
+    out = out.."! α\n"
+    out = out.."! β\n"
+    out = out.."! γ\n"
     out = out.."! Slot Match Bonus\n"
-    out = out.."! style=\"width: 5%\" | Type\n"
+    out = out.."! Type\n"
     out = out.."\n"
 
     for _,def in ipairs(gems) do
@@ -567,6 +533,7 @@ function wikiggutil.Wikitext.GemsTable()
         local name = def.pretty and def.pretty.name or ""
         local code_name = def.name or ""
         local name_formatted = Link(name).."<br><code>"..code_name.."</code>"
+        out = out.."| "..cell_center.." "
         out = out.."| "..name_formatted.."\n"
 
         local desc = def.pretty and def.pretty.slotted_desc or ""
@@ -635,18 +602,18 @@ function wikiggutil.Wikitext.GemsTable()
             end
         end
         
-        out = out.."| style=\"text-align:center;\" "
+        out = out.."| "..cell_center.." "
         out = out.."| "..(stat_str[1] or "").."\n"
-        out = out.."| style=\"text-align:center;\" "
+        out = out.."| "..cell_center.." "
         out = out.."| "..(stat_str[2] or "").."\n"
-        out = out.."| style=\"text-align:center;\" "
+        out = out.."| "..cell_center.." "
         out = out.."| "..(stat_str[3] or "").."\n"
-        out = out.."| style=\"text-align:center;\" "
+        out = out.."| "..cell_center.." "
         out = out.."| "..(stat_str_bonus or "").."\n"
 
         local gem_type = def.gem_type or ""
         local gem_type_pretty = STRINGS.GEMS.SLOT_TYPE[gem_type] or ""
-        out = out.."| style=\"text-align:center;\" "
+        out = out.."| "..cell_center.." "
         out = out.."| "..gem_type_pretty.."\n"
 
         out = out.."\n"
@@ -663,7 +630,6 @@ function wikiggutil.Wikitext.GemsNavbox()
 
     local File = wikiggutil.Wikitext.File
     local Link = wikiggutil.Wikitext.Link
-    local FileLink = wikiggutil.Wikitext.FileLink
 
     local out = ""
     out = out.."{{Navbox\n" -- navbox start
@@ -760,6 +726,8 @@ function wikiggutil.Wikitext.ConstructablesTable()
     local File = wikiggutil.Wikitext.File
     local FileLink = wikiggutil.Wikitext.FileLink
 
+    local cell_center = "style=\"text-align:center;\""
+
     -- this is so janky but i managed to make it work, i am so proud of myself now
     -- (see screens/town/craftscreenmulti.lua -> function CraftSinglePanel:_AddTabs())
     local UpvalueHacker = require "tools.upvaluehacker"
@@ -813,9 +781,14 @@ function wikiggutil.Wikitext.ConstructablesTable()
     end
 
     local out = ""
-    out = out.."{| class=\"wikitable\"\n" -- table start
+    out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! Icon !! Name !! Ingredients !! Grid Size !! First Craft Bounty\n\n"
+    out = out.."! class=\"unsortable\" | Icon\n"
+    out = out.."! Name\n"
+    out = out.."! Ingredients\n"
+    out = out.."! Grid Size\n"
+    out = out.."! First Craft Bounty\n"
+    out = out.."\n"
 
     for _,tab_key in ipairs(tab_keys_ordered) do
         local tab_items = all_tab_items[tab_key]
@@ -853,13 +826,13 @@ function wikiggutil.Wikitext.ConstructablesTable()
                 end
             end
             local formatted_ingredients = table.concat(ingredient_strings, ", ")
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..formatted_ingredients.."\n"
 
             local gridsize_w = def.gridsize and def.gridsize.w or 1
 	        local gridsize_h = def.gridsize and def.gridsize.h or 1
             local gridsize_text = tostring(gridsize_w).."x"..tostring(gridsize_h)
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..gridsize_text.."\n"
 
             local reward_id, amount = Constructable.GetFirstCraftBounty(def)
@@ -871,7 +844,7 @@ function wikiggutil.Wikitext.ConstructablesTable()
             local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
             local amount_str = "x"..tostring(amount)
             local craft_bounty_str = name_str.." "..amount_str
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..craft_bounty_str.."\n"
         end
 
@@ -894,6 +867,8 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
 
     local Link = wikiggutil.Wikitext.Link
     local RewardToString = wikiggutil.Wikitext.RewardToString
+
+    local cell_center = "style=\"text-align:center;\""
 
     local locations_ordered = Biomes.location_unlock_order
     local all_progression_rewards = wikiggutil.Data.GetBiomeExplorationRewards()
@@ -949,7 +924,7 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
         local location_name_pretty = location_def.pretty and location_def.pretty.name or location_def.id
         out = out.."|-".."\n"
         out = out.."| rowspan="..tostring(rows).." "
-        out = out.."style=\"text-align:center;\" "
+        out = out..""..cell_center
         out = out.."| "..Link(location_name_pretty).."\n"
 
         for idx_lvl=1,max_level do
@@ -957,12 +932,12 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
                 out = out.."|-".."\n"
             end
 
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..tostring(idx_lvl).."\n"
             out = out.."| "..reward_strings[idx_lvl].."\n"
         end
         out = out.."|-".."\n"
-        out = out.."| style=\"text-align:center;\" "
+        out = out.."| "..cell_center.." "
         out = out.."| ".."∞".."\n"
         out = out.."| "..reward_strings[0].."\n"
 
@@ -1000,14 +975,16 @@ function wikiggutil.Wikitext.FoodTable()
     local StrRemapLinks = wikiggutil.Util.StrRemapLinks
     local FormattedString = wikiggutil.Wikitext.FormattedString
 
+    local cell_center = "style=\"text-align:center;\""
+
     local all_defs = wikiggutil.Data.GetFoodDefs()
 
     local out = ""
     out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! Icon\n"
+    out = out.."! class=\"unsortable\" | Icon\n"
     out = out.."! Name\n"
-    out = out.."! Description\n"
+    out = out.."! class=\"unsortable\" | Description\n"
     out = out.."! Power\n"
     out = out.."! Ingredients\n"
     out = out.."! Purchasable period (days)\n"
@@ -1042,7 +1019,7 @@ function wikiggutil.Wikitext.FoodTable()
             -- (for power and ingredients) i'd make these two center aligned
             -- because there usually isnt much text in these data cells so it
             -- would look better centered, imo
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name).."\n"
         end
 
@@ -1066,7 +1043,7 @@ function wikiggutil.Wikitext.FoodTable()
             end
         end
         local formatted_ingredients = table.concat(ingredient_strings, ", ")
-        out = out.."| style=\"text-align:center;\" "
+        out = out.."| "..cell_center.." "
         out = out.."| "..formatted_ingredients.."\n"
 
         
@@ -1093,14 +1070,14 @@ function wikiggutil.Wikitext.FoodTable()
                 menu_cooldown_str = menu_cooldown_str.."-"..tostring(menu_cooldown[2])
             end
 
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..time_available_str.."\n"
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..num_available_str.."\n"
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..menu_cooldown_str.."\n"
         else
-            out = out.."| colspan=3 style=\"text-align:center;\" | ".."Permanent Food".."\n"
+            out = out.."| colspan=3 "..cell_center.." | ".."Permanent Food".."\n"
         end
         
     end
@@ -1157,6 +1134,8 @@ function wikiggutil.Wikitext.MasteriesTable()
     local StrRemapLinks = wikiggutil.Util.StrRemapLinks
     local FormattedString = wikiggutil.Wikitext.FormattedString
     local RewardToString = wikiggutil.Wikitext.RewardToString
+
+    local cell_center = "style=\"text-align:center;\""
 
     local UpvalueHacker = require "tools.upvaluehacker"
     local MasteryScreenMulti = require "screens.town.masteryscreenmulti"
@@ -1229,9 +1208,9 @@ function wikiggutil.Wikitext.MasteriesTable()
     local out = ""
     out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
-    out = out.."! Icon\n"
-    out = out.."! Name\n"
-    out = out.."! Description\n"
+    out = out.."! class=\"unsortable\" | Icon\n"
+    out = out.."! style=\"min-width:200px;\" | Name\n"
+    out = out.."! style=\"min-width:300px;\" class=\"unsortable\" | Description\n"
     out = out.."! Max Progress\n"
     out = out.."! Rewards\n"
     out = out.."! Difficulty\n"
@@ -1263,7 +1242,7 @@ function wikiggutil.Wikitext.MasteriesTable()
             out = out.."| "..desc.."\n"
 
             local max_progress = def.max_progress
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..tostring(max_progress).."\n"
 
             local reward_strings = {}
@@ -1272,13 +1251,13 @@ function wikiggutil.Wikitext.MasteriesTable()
                 table.insert(reward_strings, RewardToString(reward))
             end
             local rewards_string = table.concat(reward_strings, ", ")
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..rewards_string.."\n"
             
             local difficulty = def.difficulty
             difficulty = string.lower(difficulty)
             difficulty = string.first_to_upper(difficulty)
-            out = out.."| style=\"text-align:center;\" "
+            out = out.."| "..cell_center.." "
             out = out.."| "..difficulty.."\n"
         end
 
@@ -1288,6 +1267,12 @@ function wikiggutil.Wikitext.MasteriesTable()
     out = out.."|}" -- table end
 
     return out
+end
+
+function wikiggutil.Data.GetAnomalyDefs()
+end
+
+function wikiggutil.Wikitext.AnomaliesTable()
 end
 
 return wikiggutil
