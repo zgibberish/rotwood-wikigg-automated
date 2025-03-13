@@ -124,6 +124,19 @@ function wikiggutil.Util.StrRemapLinks(str, remap_table)
     return str
 end
 
+function wikiggutil.Util.TEXToPNGPath(path)
+    -- converts full .tex file path into a single .png file name
+    -- to match the file names uploaded to wiki
+
+    -- e.g: from "images/ui_ftf_weather_icons1/icon_weather_zuccotraps.tex"
+    -- to "images_ui_ftf_weather_icons1_icon_weather_zuccotraps.png"
+
+    path = path:gsub("/", "_") -- replace / with _
+    path = path:match("(.*)%.tex") -- remove .tex
+    path = path..".png"
+    return path
+end
+
 -- usually i would only use this when there are a lot of attributes
 -- or repetitive code
 function wikiggutil.Wikitext.AttributesToString(attr_table)
@@ -1270,9 +1283,96 @@ function wikiggutil.Wikitext.MasteriesTable()
 end
 
 function wikiggutil.Data.GetAnomalyDefs()
+    -- doesnt do anything extra like sorting atm, ig you can get the same
+    -- results from Weather directly
+    local Weather = require "defs.weather"
+    return Weather.Defs
 end
 
 function wikiggutil.Wikitext.AnomaliesTable()
+    local Weather = require "defs.weather"
+    local lume = require "util.lume"
+
+    local Attr = wikiggutil.Wikitext.AttributesToString
+    local File = wikiggutil.Wikitext.File
+    local MAP_LINKS = wikiggutil.Const.MAP_LINKS
+    local StrRemapLinks = wikiggutil.Util.StrRemapLinks
+    local FormattedString = wikiggutil.Wikitext.FormattedString
+
+    local all_defs = wikiggutil.Data.GetAnomalyDefs()
+
+    local out = ""
+    out = out.."{| class=\"wikitable mw-collapsible\"\n" -- table start
+    out = out.."|-\n"
+    out = out.."! Icon\n"
+    out = out.."! Name\n"
+    out = out.."! style=\"min-width:280px;\" | Description\n"
+    out = out.."! Intensities<br>(Rarities)\n"
+    out = out.."\n"
+
+    for name,def in pairs(all_defs) do
+        -- (idx : rarity) table (NOTE: idx doesnt have to start at 1)
+        -- example:
+        -- 2: "EPIC"
+        -- 3: "LEGENDARY"
+        -- this is like the one in powers table but done a bit differently
+        local rarities = {}
+        local rarities_normalized_idx = {}
+        local num_rarities = 0
+        for rarity,_ in pairs(def.tuning) do
+            local idx = Weather.Rarities.id[rarity]
+            rarities[idx] = rarity
+            table.insert(rarities_normalized_idx, idx)
+            num_rarities = num_rarities + 1
+        end
+        
+        local rowspan_amount = (num_rarities > 1) and num_rarities or nil
+
+        out = out.."|-\n"
+
+        local icon = wikiggutil.Util.TEXToPNGPath(def.icon or "")
+        if rowspan_amount then out = out.."| "..Attr({rowspan=rowspan_amount}).." " end
+        out = out.."| "..File(icon, wikiggutil.Const.ICON_SIZE_LARGE).."\n"
+
+        -- multiple names+desc for multiple intensities
+        local name_strings = {}
+        local desc_strings = {}
+        for idx,rarity in pairs(rarities) do
+            local name = Weather.GetNameForWeatherDef(def, idx)
+            local desc = Weather.GetDescForWeatherDef(def, idx)
+
+            desc = StrRemapLinks(desc, MAP_LINKS)
+            desc = FormattedString(desc)
+
+            table.insert(name_strings, name)
+            table.insert(desc_strings, desc)
+        end
+        out = out.."| "..name_strings[1].."\n"
+        out = out.."| "..desc_strings[1].."\n"
+
+        local rarities_formatted = rarities
+        rarities_formatted = lume.map(rarities_normalized_idx, function(idx)
+            -- here table idx must start from 1 or lume.map
+            return string.first_to_upper(string.lower(rarities[idx]))
+        end)
+        local rarities_str = table.concat(rarities_formatted, "<br>")
+        out = out.."| "..Attr({rowspan=rowspan_amount, style="text-align:center;"}).." "
+        out = out.."| "..rarities_str.."\n"
+
+        if #name_strings > 1 then
+            for i=2,#name_strings do
+                out = out.."|- \n"
+                out = out.."| "..name_strings[i].."\n"
+                out = out.."| "..desc_strings[i].."\n"
+            end
+        end
+
+        out = out.."\n"
+    end
+
+    out = out.."|}" -- table end
+
+    return out
 end
 
 return wikiggutil
