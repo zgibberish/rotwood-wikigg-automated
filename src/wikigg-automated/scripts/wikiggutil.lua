@@ -124,6 +124,17 @@ function wikiggutil.Util.StrRemapLinks(str, remap_table)
     return str
 end
 
+function wikiggutil.Wikitext.AttributesToString(attr_table)
+    local attr_table = attr_table or {}
+    local formatted_attributes = {}
+    for attr, val in pairs(attr_table) do
+        table.insert(formatted_attributes,
+            tostring(attr).."=".."\""..tostring(val).."\""
+        )
+    end
+    return table.concat(formatted_attributes, " ")
+end
+
 function wikiggutil.Wikitext.Link(str, dest)
     if dest then
         return "[["..dest.."|"..str.."]]"
@@ -136,7 +147,7 @@ function wikiggutil.Wikitext.File(filename, size, constrain_height)
     if size then
         size_opt = "|"
         if constrain_height then size_opt = size_opt .. "x" end
-        size_opt = size and size_opt..tostring(size).."px"
+        size_opt = size_opt..tostring(size).."px"
     end
     
     return "[[File:"..filename..size_opt.."]]"
