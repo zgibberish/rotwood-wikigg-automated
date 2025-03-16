@@ -1008,10 +1008,8 @@ function wikiggutil.Wikitext.FoodTable()
     for _,def in ipairs(all_defs) do
         out = out.."|-\n" -- row
 
-        local icon = def.icon or ""
-        local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-        local filename = icon_base..".png"
-        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_MID).."\n"
+        local icon = wikiggutil.Util.TEXToPNGPath(def.icon or "")
+        out = out.."| "..File(icon, wikiggutil.Const.ICON_SIZE_MID).."\n"
 
         local name = def.pretty and def.pretty.name or ""
         out = out.."| "..name.."\n"
@@ -1058,9 +1056,12 @@ function wikiggutil.Wikitext.FoodTable()
         local formatted_ingredients = table.concat(ingredient_strings, ", ")
         out = out.."| "..cell_center.." "
         out = out.."| "..formatted_ingredients.."\n"
-
         
-        if def.menu_data then -- the ones without stock and cooldown are permanent dishes
+        local is_core_food = def.always_available -- (permanent food)
+
+        if is_core_food then
+            out = out.."| colspan=3 "..cell_center.." | ".."Permanent Food".."\n"
+        else
             -- (explanation from food.lua)
             -- time_available: min and max of how many days the food will be available for purchase
             local time_available = def.menu_data.time_available
@@ -1069,12 +1070,16 @@ function wikiggutil.Wikitext.FoodTable()
                 time_available_str = time_available_str.."-"..tostring(time_available[2])
             end
 
-            -- num_available: min and max of how many times the food can be bought when it is on the menu
-            local num_available = def.menu_data.num_available
-            local num_available_str = tostring(num_available[1])
-            if num_available[1] ~= num_available[2] then
-                num_available_str = num_available_str.."-"..tostring(num_available[2])
-            end
+            -- old implementation
+            -- -- num_available: min and max of how many times the food can be bought when it is on the menu
+            -- local num_available = def.menu_data.num_available
+            -- local num_available_str = tostring(num_available[1])
+            -- if num_available[1] ~= num_available[2] then
+            --     num_available_str = num_available_str.."-"..tostring(num_available[2])
+            -- end
+            -- newer implementation:
+            -- (specials always come in x3 bundle, but you can only buy all 3 at once)
+            local num_available_str = tostring(def.count)
 
             -- menu_cooldown: how many days before the food can be added to the menu again
             local menu_cooldown = def.menu_data.menu_cooldown
@@ -1089,10 +1094,9 @@ function wikiggutil.Wikitext.FoodTable()
             out = out.."| "..num_available_str.."\n"
             out = out.."| "..cell_center.." "
             out = out.."| "..menu_cooldown_str.."\n"
-        else
-            out = out.."| colspan=3 "..cell_center.." | ".."Permanent Food".."\n"
         end
-        
+
+        out = out.."\n"
     end
 
     out = out.."|}" -- table end
