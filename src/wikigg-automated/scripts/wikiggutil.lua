@@ -346,13 +346,11 @@ function wikiggutil.Wikitext.RewardToString(reward)
     if def == nil then return "REWARD_HAS_NO_DEF" end
 
     if Power.Slots[def.slot] ~= nil then -- Power
-        local icon = def.icon or ""
-        local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-        local filename = icon_base..".png"
+        local icon = wikiggutil.Util.TEXToPNGPath(def.icon or "")
         
         local name = def:GetPrettyName()
 
-        return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
     elseif Cosmetic.IsSlot(def.slot) then -- Cosmetic
         local slot = Cosmetic.Slots[def.slot]
         
