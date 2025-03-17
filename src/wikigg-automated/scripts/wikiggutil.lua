@@ -347,10 +347,9 @@ function wikiggutil.Wikitext.RewardToString(reward)
 
     if Power.Slots[def.slot] ~= nil then -- Power
         local icon = wikiggutil.Util.TEXToPNGPath(def.icon or "")
-        
         local name = def:GetPrettyName()
 
-        return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        return File(icon, wikiggutil.Const.ICON_SIZE_SMALL).." "..Link(name)
     elseif Cosmetic.IsSlot(def.slot) then -- Cosmetic
         local slot = Cosmetic.Slots[def.slot]
         
@@ -367,13 +366,13 @@ function wikiggutil.Wikitext.RewardToString(reward)
             icon = "inventory_wrap.png" -- from icons_ftf
         end
 
-        return File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        return File(icon, wikiggutil.Const.ICON_SIZE_SMALL).." "..Link(name)
     elseif Constructable.IsSlot(def.slot) then -- Constructable
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
         local name = def.pretty and def.pretty.name or def.name
-        return File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name)
+        return File(filename, wikiggutil.Const.ICON_SIZE_SMALL).." "..Link(name)
     elseif def.slot == Consumable.Slots.MATERIALS then -- Consumable
         local name = def.pretty and def.pretty.name or def.name
     
@@ -1064,15 +1063,14 @@ function wikiggutil.Wikitext.FoodTable()
 
         local power_def = Power.FindPowerByName(def.power)
         do
-            local icon = wikiggutil.Util.TEXToPNGPath(def.icon or "")
-
+            local icon = wikiggutil.Util.TEXToPNGPath(power_def.icon or "")
             local name = power_def:GetPrettyName()
 
             -- (for power and ingredients) i'd make these two center aligned
             -- because there usually isnt much text in these data cells so it
             -- would look better centered, imo
             out = out.."| "..cell_center.." "
-            out = out.."| "..File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name).."\n"
+            out = out.."| "..File(icon, wikiggutil.Const.ICON_SIZE_SMALL).." "..Link(name).."\n"
         end
 
         local ingredient_strings = {}
