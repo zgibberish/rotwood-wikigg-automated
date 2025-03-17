@@ -1064,9 +1064,7 @@ function wikiggutil.Wikitext.FoodTable()
 
         local power_def = Power.FindPowerByName(def.power)
         do
-            local icon = power_def.icon or ""
-            local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-            local filename = icon_base..".png"
+            local icon = wikiggutil.Util.TEXToPNGPath(def.icon or "")
 
             local name = power_def:GetPrettyName()
 
@@ -1074,7 +1072,7 @@ function wikiggutil.Wikitext.FoodTable()
             -- because there usually isnt much text in these data cells so it
             -- would look better centered, imo
             out = out.."| "..cell_center.." "
-            out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name).."\n"
+            out = out.."| "..File(icon, wikiggutil.Const.ICON_SIZE_SMALL)..Link(name).."\n"
         end
 
         local ingredient_strings = {}
