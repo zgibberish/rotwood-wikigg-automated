@@ -66,13 +66,19 @@ wikiggutil.Const.MAP_LINKS = {
     {match = "Power", dest = "Powers"},
 
     --TODO: add these sections to the mechanics page, then link to them
+
+    -- temp for now
+    {match = "Fortifying Ingots"},
+    {match = "Fortifying Ingot", dest = "Fortifying Ingots"},
+    {match = "Materials"},
+    {match = "Material", dest = "Materials"},
+
     {match = "Runspeed"},
     {match = "Teffra"},
     {match = "Shield"},
     {match = "Perfect Dodge"},
     {match = "Quick Rise"},
     {match = "Traps"},
-    {match = "Fortifying Ingot"},
 
     {match = "Mother Treek"},
     {match = "Owlitzer"},
