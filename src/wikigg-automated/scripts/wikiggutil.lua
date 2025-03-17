@@ -463,11 +463,9 @@ function wikiggutil.Wikitext.PowersTable()
         -- images/ui_ftf_power_icons3/icon_shield_powers_shield_to_health.tex
         -- into this
         -- icon_shield_powers_shield_to_health.png
-        local icon = def.icon or ""
-        local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
-        local filename = icon_base..".png"
+        local icon = wikiggutil.Util.TEXToPNGPath(def.icon or "")
         if rowspan_amount then out = out.."| "..Attr({rowspan=rowspan_amount}).." " end
-        out = out.."| "..File(filename, wikiggutil.Const.ICON_SIZE_LARGE).."\n"
+        out = out.."| "..File(icon, wikiggutil.Const.ICON_SIZE_LARGE).."\n"
 
         local name = def:GetPrettyName()
         local code_name = def.name or ""
