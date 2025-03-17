@@ -375,7 +375,7 @@ function wikiggutil.Wikitext.RewardToString(reward)
         return File(filename, wikiggutil.Const.ICON_SIZE_SMALL).." "..Link(name)
     elseif def.slot == Consumable.Slots.MATERIALS then -- Consumable
         local name = def.pretty and def.pretty.name or def.name
-    
+
         local icon = def.icon or ""
         local _, icon_base = string.match(icon, "(.*)%/(.*).tex")
         local filename = icon_base..".png"
@@ -384,6 +384,11 @@ function wikiggutil.Wikitext.RewardToString(reward)
 
         local name_str = FileLink(name, nil, filename, wikiggutil.Const.ICON_SIZE_SMALL)
         local amount_str = "x"..tostring(amount)
+
+        -- premade templates for specific items
+        if def.name == "konjur_soul_lesser" then -- corestone
+            return "{{Corestone}}".." "..amount_str
+        end
 
         return name_str.." "..amount_str
     elseif def.slot == Equipment.Slots.WEAPON then -- Equipment
