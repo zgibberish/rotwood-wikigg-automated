@@ -27,18 +27,45 @@ if you find any issues or want to adjust something, please let me know!
 -- you can map different strings to the same page link
 -- order matters, case sensitive
 wikiggutil.Const.MAP_LINKS = {
-    -- notice that "Focus Hits" is mapped before "Focus")
-    {match = "Focus Hits"},
-    {match = "Focus Hit", dest = "Focus Hits"},
-    {match = "Focus", dest = "Focus Hits"},
+    -- (notice that "Focus Hits" is mapped before "Focus Hit" and "Focus")
+    {match = "Light Attacks", dest = "Mechanics#Light Attack"},
+    {match = "Light Attack", dest = "Mechanics#Light Attack"},
+    {match = "Heavy Attacks", dest = "Mechanics#Heavy Attack"},
+    {match = "Heavy Attack", dest = "Mechanics#Heavy Attack"},
 
-    {match = "Critical Hits"},
-    {match = "Critical Hit Chance", dest = "Critical Hits"},
-    {match = "Critical Chance", dest = "Critical Hits"},
-    {match = "Critical Hit", dest = "Critical Hits"},
-    {match = "Critical", dest = "Critical Hits"},
+    {match = "Focus Hits", dest = "Mechanics#Focus Hit"},
+    {match = "Focus Hit", dest = "Mechanics#Focus Hit"},
+    {match = "Focus", dest = "Mechanics#Focus Hit"},
+
+    {match = "Critical Hits", dest = "Mechanics#Critical Hit"},
+    {match = "Critical Hit Chance", dest = "Mechanics#Critical Hit Chance"},
+    {match = "Critical Chance", dest = "Mechanics#Critical Hit"},
+    {match = "Critical Hit", dest = "Mechanics#Critical Hit"},
+    {match = "Critical", dest = "Mechanics#Critical Hit"},
+
+    {match = "Hit Streaks", dest = "Mechanics#Hitstreaks"},
+    {match = "Hit Streak", dest = "Mechanics#Hitstreaks"},
+
+    {match = "Dodge Cancel", dest = "Mechanics#Dodge Cancel"},
+    {match = "Perfect Dodges", dest = "Mechanics#Dodge"},
+    {match = "Perfect Dodge", dest = "Mechanics#Dodge"},
+    {match = "Dodges", dest = "Mechanics#Dodge"},
+    {match = "Dodge", dest = "Mechanics#Dodge"},
+    
+    {match = "Revives", dest = "Mechanics#Reviving"},
+    {match = "Revive", dest = "Mechanics#Reviving"},
+
+    {match = "Health", dest = "Mechanics#Health"},
+    {match = "Healing", dest = "Mechanics#Healing/Healing bonus"},
+    {match = "Heals", dest = "Mechanics#Healing/Healing bonus"},
+    {match = "Heal", dest = "Mechanics#Healing/Healing bonus"},
+
+    {match = "Hitstun", dest = "Mechanics#Hitstun"},
 
     {match = "Powers"},
+    {match = "Power", dest = "Powers"},
+
+    --TODO: add these sections to the mechanics page, then link to them
     {match = "Runspeed"},
     {match = "Teffra"},
     {match = "Shield"},
@@ -401,6 +428,7 @@ function wikiggutil.Wikitext.PowersTable()
     local powers = wikiggutil.Data.GetPowerDefs()
    
     local out = ""
+    out = out..wikiggutil.Const.INFO.."\n"
     out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
     out = out.."! class=\"unsortable\" | Icon\n"
@@ -531,6 +559,7 @@ function wikiggutil.Wikitext.GemsTable()
     local gems = wikiggutil.Data.GetGemDefs()
 
     local out = ""
+    out = out..wikiggutil.Const.INFO.."\n"
     out = out.."{| class=\"wikitable mw-collapsible sortable\"\n" -- table start
     out = out.."|-\n"
     out = out.."! class=\"unsortable\" | Icon\n"
@@ -653,6 +682,7 @@ function wikiggutil.Wikitext.GemsNavbox()
     local Link = wikiggutil.Wikitext.Link
 
     local out = ""
+    out = out..wikiggutil.Const.INFO.."\n"
     out = out.."{{Navbox\n" -- navbox start
     out = out.."| title = "..Link("Gems").."\n"
     out = out.."| state = uncollapsed\n\n"
@@ -802,6 +832,7 @@ function wikiggutil.Wikitext.ConstructablesTable()
     end
 
     local out = ""
+    out = out..wikiggutil.Const.INFO.."\n"
     out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
     out = out.."! class=\"unsortable\" | Icon\n"
@@ -895,6 +926,7 @@ function wikiggutil.Wikitext.BiomeExplorationRewardsTable()
     local all_progression_rewards = wikiggutil.Data.GetBiomeExplorationRewards()
 
     local out = ""
+    out = out..wikiggutil.Const.INFO.."\n"
     --NOTE (gibberish): dont make this table sortable
     out = out.."{| class=\"wikitable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
@@ -1001,6 +1033,7 @@ function wikiggutil.Wikitext.FoodTable()
     local all_defs = wikiggutil.Data.GetFoodDefs()
 
     local out = ""
+    out = out..wikiggutil.Const.INFO.."\n"
     out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
     out = out.."! class=\"unsortable\" | Icon\n"
@@ -1231,6 +1264,7 @@ function wikiggutil.Wikitext.MasteriesTable()
     end
 
     local out = ""
+    out = out..wikiggutil.Const.INFO.."\n"
     out = out.."{| class=\"wikitable sortable mw-collapsible\"\n" -- table start
     out = out.."|-\n"
     out = out.."! class=\"unsortable\" | Icon\n"
